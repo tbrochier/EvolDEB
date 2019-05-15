@@ -1,2 +1,2 @@
 # EvolDEB
-IBM for fish modelling
+It is an individual based model for small pelagic fish
