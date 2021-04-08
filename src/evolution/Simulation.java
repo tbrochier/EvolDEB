@@ -78,7 +78,7 @@ public class Simulation extends Object {
         //-------------- PARAMETRES A DEFINIR PAR L'UTILISATEUR ------------------------
 
 // A -  LA REGION
-        dataset_EVOL = new Senegal(); //<-- ICI METTRE Peru OU CANARY OU Chile
+        dataset_EVOL = new Peru(); //<-- ICI METTRE Peru OU CANARY OU Chile
 
         outpout_netcdf_flag = true;
         if (outpout_netcdf_flag) {
