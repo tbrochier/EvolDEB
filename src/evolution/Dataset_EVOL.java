@@ -111,6 +111,8 @@ public abstract class Dataset_EVOL {
      * Mask: water = 1, cost = 0
      */
     static byte[][] maskRho;
+    static byte[][] masku;
+    static byte[][] maskv;
     /**
      * Ocean free surface elevetation at current time
      */
@@ -258,7 +260,8 @@ public abstract class Dataset_EVOL {
     /**
      * Name of the Variable in NetCDF file
      */
-    static String strLon,  strLat,  strMask,  strBathy;
+    static String strLon,  strLat,  strMask_rho, strBathy;
+    //static String strMask_u,strMask_v;
     /**
      * Name of the Variable in NetCDF file
      */
@@ -727,7 +730,6 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
             // Vérifier que tout est OK...
             }
 
-
             Array xTimeTp1 = ncIn.findVariable(strTime).read();
             time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(rank));
             //time_tp1 -= time_tp1 % 60;
@@ -777,7 +779,6 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
     //                    read(origin, new int[]{1, nz, ny, nx}).reduce().
       //                  copyToNDJavaArray();
             }
-
             
             if (FLAG_PLANKTON_PISCES_tot){
                 Phyto_tp1 = (float[][][]) ncIn.findVariable(strPhytot).
@@ -787,8 +788,7 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
                         (float[][][]) ncIn.findVariable(strZootot).
                         read(origin, new int[]{1, nz, ny, nx}).reduce().
                         copyToNDJavaArray();
-}            
-            
+}                        
             if (FLAG_PLANKTON_NPZD) {
                 Phyto_tp1 = (float[][][]) ncIn.findVariable(strPhyto).
                         read(origin, new int[]{1, nz, ny, nx}).reduce().
@@ -1003,26 +1003,28 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
      * @return <code>true</code> if cell(i, j) is in water,
      *         <code>false</code> otherwise.
      */
-    public static boolean isInWater(int i, int j) {
-        return (maskRho[j][i] > 0);
-    }
+    public static boolean isInWater(int i, int j) {    
 
-    /**
-     * Determines whether the specified {@code RohPoint} is in water.
-     * @param ptRho the RhoPoint
-     * @return <code>true</code> if the {@code RohPoint} is in water,
-     *         <code>false</code> otherwise.
-     * @see #isInWater(int i, int j)
-     */
-    public static boolean isInWater(RhoPoint ptRho) {
-        try {
-            return (maskRho[(int) Math.round(ptRho.getY())][(int) Math.round(
-                    ptRho.getX())] > 0);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            return false;
-        }
+//return (maskRho[j][i] * masku[j][i] *maskv[j][i] > 0);
+// 11 oct 2017 : echec de cet essais car pas possible de lire masku et maskv (grille ij decalee)         
+
+// denut DEBUG 
+/*
+System.out.println(" j  = " + j + " i = " + i);
+
+try { return (maskRho[j][i] > 0);} 
+catch (Exception e) {
+            System.out.println("Probleme dans isInWater : " + e.getMessage());
+            System.exit(0); 
+   }
+*/
+// fin DEBUG 
+
+return (maskRho[j][i] > 0);
 
     }
+    
+
 
     /**
      * Determines whether the specified {@code RohPoint} is in water.
@@ -1048,7 +1050,7 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
      * @param pGrid a double[] the coordinates of the grid point
      * @return <code>true</code> if the grid point is close to cost,
      *         <code>false</code> otherwise.
-     */
+     *
     static boolean isCloseToCost(double[] pGrid) {
     int i, j, ii, jj;
     i = (int) (Math.round(pGrid[0]));
@@ -1067,9 +1069,11 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
     return !(isInWater(i + ii, j) && isInWater(i + ii, j + jj) &&
     isInWater(i, j + jj));
     }
-     
-/*
-    // modif TIM:
+    */ 
+
+    // modif TIM: plus contraingnant que la version ci-dessus
+    // necessaire pour eviter d'interpoler avec des temperatures de 0°C
+    // retablit le 10 juillet 2017 (après les simu du papier!)
     static boolean isCloseToCost(double[] pGrid) {
 
         int i, j;
@@ -1089,7 +1093,7 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
         return !(isInWater(i, j) && isInWater(i + 1, j) &&
                 isInWater(i, j + 1) && isInWater(i + 1, j + 1));
     }
- * */
+ //* */
 
 
     /**
@@ -1390,6 +1394,13 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
                     (double) jmin + Math.min(Math.max(0.d, deltay), 1.d);
         }
 
+        // debug debut
+        if (xgrid==-1)
+        {
+            System.out.println("hjh");
+        }
+        // debug fin
+        
         return (new double[]{xgrid, ygrid});
     }
 
@@ -1481,6 +1492,8 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
      * @return <code>true</code> if (lon, lat) belongs to the polygon,
      *         <code>false</code>otherwise.
      */
+       
+    
     public static boolean isInsidePolygone(int imin, int imax, int jmin,
             int jmax, double lon, double lat) {
 
@@ -2471,15 +2484,19 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
         int[] origin = new int[]{jpo, ipo};
         int[] size = new int[]{ny, nx};
         Array arrLon,
-                arrLat, arrMask, arrH, arrZeta, arrPm, arrPn;
+                arrLat, arrMask_rho, arrMask_u, arrMask_v, arrH, arrZeta, arrPm, arrPn;
         Index index;
 
         StringBuffer list = new StringBuffer(strLon);
         list.append(", ");
         list.append(strLat);
         list.append(", ");
-        list.append(strMask);
+        list.append(strMask_rho);
         list.append(", ");
+//        list.append(strMask_u);
+//        list.append(", ");
+//        list.append(strMask_v);
+//        list.append(", ");
         list.append(strBathy);
         list.append(", ");
         list.append(strZeta);
@@ -2491,8 +2508,12 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
             arrLon = ncIn.findVariable(strLon).read(origin, size);
             arrLat =
                     ncIn.findVariable(strLat).read(origin, size);
-            arrMask =
-                    ncIn.findVariable(strMask).read(origin, size);
+            arrMask_rho =
+                    ncIn.findVariable(strMask_rho).read(origin, size);
+//            arrMask_u =
+//                    ncIn.findVariable(strMask_u).read(origin, size);
+//            arrMask_v =
+//                    ncIn.findVariable(strMask_v).read(origin, size);
             arrH =
                     ncIn.findVariable(strBathy).read(origin, size);
             arrZeta =
@@ -2523,9 +2544,9 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
                 }
             }
 
-            if (arrMask.getElementType() != byte.class) {
+            if (arrMask_rho.getElementType() != byte.class) {
                 maskRho = new byte[ny][nx];
-                index = arrMask.getIndex();
+                index = arrMask_rho.getIndex();
 
 
 
@@ -2533,17 +2554,48 @@ time_tp1 = xTimeTp1.getFloat(xTimeTp1.getIndex().set(1));
                         j < ny;
                         j++) {
                     for (int i = 0; i < nx; i++) {
-                        maskRho[j][i] = arrMask.getByte(index.set(j, i));
+                        maskRho[j][i] = arrMask_rho.getByte(index.set(j, i));
                     }
                 }
             } else {
-                maskRho = (byte[][]) arrMask.copyToNDJavaArray();
+                maskRho = (byte[][]) arrMask_rho.copyToNDJavaArray();
+            }
+/*
+            if (arrMask_u.getElementType() != byte.class) {
+                masku = new byte[ny][nx];
+                index = arrMask_u.getIndex();
+
+
+
+                for (int j = 0;
+                        j < ny;
+                        j++) {
+                    for (int i = 0; i < nx; i++) {
+                        masku[j][i] = arrMask_u.getByte(index.set(j, i));
+                    }
+                }
+            } else {
+                masku = (byte[][]) arrMask_u.copyToNDJavaArray();
             }
 
+            if (arrMask_v.getElementType() != byte.class) {
+                maskv = new byte[ny][nx];
+                index = arrMask_v.getIndex();
 
 
 
+                for (int j = 0;
+                        j < ny;
+                        j++) {
+                    for (int i = 0; i < nx; i++) {
+                        maskv[j][i] = arrMask_v.getByte(index.set(j, i));
+                    }
+                }
+            } else {
+                maskv = (byte[][]) arrMask_v.copyToNDJavaArray();
+            }
 
+*/
 
 
             if (arrPm.getElementType() == double.class) {

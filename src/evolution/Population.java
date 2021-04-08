@@ -61,29 +61,6 @@ public class Population {
         // CORRECTION BUG ADVECTION (19 Juin 2009) pour interpolation :
         nb_jours_ecoule_entre_roms_records = -1;
 
-        /*
-         // Calcul de la date :  -------------------------------------------
-         // ATTENTION C FAUX : VOIR http://www.developpez.net/forums/d1513093/java/general-java/convertir-nombre-secondes-1977-date/#post8210566
-         Calendar c = Calendar.getInstance(); 
-         c.set(1977, Calendar.JANUARY, 1);
-         long nb_secondes_from_1970_to_1977 = c.getTimeInMillis()/1000;
-         long jours_depuis_debutsimu_1977 = (long) Dataset_EVOL.getTimeTp1();
-         long time_in_days_since_1_1_1970 = jours_depuis_debutsimu_1977 + nb_secondes_from_1970_to_1977/86400;
-         c.setTimeInMillis(time_in_days_since_1_1_1970*86400*1000);
-         // Date au debut de ce stepSerial : 
-         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-         String mDate = dateFormat.format(c.getTime());
-        
-         int mYear = c.get(Calendar.YEAR);
-         int mMonth = c.get(Calendar.MONTH); 
-         int mDay = c.get(Calendar.DAY_OF_MONTH);
-
-         // Nombre de jour cette annee = 
-         c.set(mYear,Calendar.DECEMBER, 31);
-         System.out.println("Date ROMS =  " + mDate);
-         //long dernier_jour_annee = (c.getTimeInMillis()/1000)/86400;
-         */
-// FIN CALCUL DATE ------------------------------------------------
         int jour_init = 0;//(int) jours_depuis_debutsimu_1980; //Simulation.nb_jours_par_ans*(Simulation.compteur_year);
         int jour_final = Simulation.nb_jours_par_ans;//(int) dernier_jour_annee;//Simulation.nb_jours_par_ans*(Simulation.compteur_year+1);
 
@@ -94,29 +71,10 @@ public class Population {
             compteur_juveniles = 0;
             compteur_adultes = 0;
             int agemax = 0;
+            int effectif_agemax = 0;
             // CHAQUE JOUR, Remise a zero des densite 2D : les premiers ne voient personne!
             mise_a_zero_densites_2D();
-//            Simulation.nbeggs_max_per_SI = 1e12;
 
-            int Nrec_max_today = (int) Simulation.nrec_max_jour;
-
-            //Math.round(500/Pop.size());            
-            // CECI POUR LES SIMU 1 A 28
-            // Pb : amortit les changement inter-annuels
-            // Adaptation de nbeggs_max_per_SI a pop.size :
-/*
-             if (Pop.size() > 2000) {
-             Simulation.nbeggs_max_per_SI = 1e14;
-             } else if (Pop.size() > 1000) {
-             Simulation.nbeggs_max_per_SI = 1e13;
-             } else if (Pop.size() > 800) {
-             Simulation.nbeggs_max_per_SI = 1e12;
-             } else if (Pop.size() > 500) {
-             Simulation.nbeggs_max_per_SI = 1e11;
-             } else {
-             Simulation.nbeggs_max_per_SI = 1e10;
-             }
-             */
             //System.out.println("nb_jours_ecoule_entre_roms_records = " +nb_jours_ecoule_entre_roms_records);
             nb_jours_ecoule_entre_roms_records++;
 
@@ -168,60 +126,12 @@ public class Population {
 //            System.out.println("Advection du poissons...." + ss );
                     Po.stepSerial(jour); // <-- ADVECTION OU DEPLACEMENT
 
-                    // TEST DE RECRUTEMENT DES LARVES : REMPLACEE PAR LA SURVIE QUI DEPEND DE LA BOUFFE?
-                    // * (a travers la mortalite size-dependant)
-                    if (Simulation.TEST_KINESIS == false) {
-                        if (Po.age == Simulation.ageMinAtRecruitment) {
-                            if ((Po.lat > Dataset_EVOL.lat_max) || (Po.lat < Dataset_EVOL.lat_min)) {
-                                Po.living = false;
-                                Po.Cause_de_la_mort = "out_lat";
-                                break;
-                            }
-                            //    Test_retention a 30 jours:
-                            if (Simulation.flagRET_shelf) {
-                                Po.isRetained_on_shelf = Math.abs(Po.bathyActuelle) < Dataset_EVOL.prof_talu;
-                            } else {
-                                Po.isRetained_on_shelf = true;
-                            }
-
-// TEST : PROBA SUCCES DE REC (PAR COMETITION)
-                            int zone = (int) (Math.floor(Po.lat - Dataset_EVOL.lat_min));
-
-// ----------------------// COMPETITION AU RECRUTEMENT //-----------------------
-                            // Cette routine doit permettre de fixer le nombre max
-                            // de Super Individu qui recrutent chaque jour
-                            // ex : on permet au max un super-indiv qui recrute par 1/12eme de degré de latitude
-//                        if ((Po.isRetained_on_shelf) && (N_rec_SI[zone] > N_recmax_SI[zone])) {
-                            //                          System.out.println(" COMPETITION AU RECRUTEMENT !!! - Before : zone =" + zone + "  N_recmax_SI[zone] =  " +  N_recmax_SI[zone] + " - N_rec_SI[zone] = " + N_rec_SI[zone] + "Po.living = "+Po.living);
-                            //                    }
-                            int E_N_recmax_SI = (int) Math.floor(N_recmax_SI[zone]);
-                            float reste = N_recmax_SI[zone] - E_N_recmax_SI;
-                            int pow = 0;
-                            if (Math.random() < reste) {
-                                pow = 1;
-                            }
-                            int N_recmax_SI = (int) E_N_recmax_SI + pow;
-
-                            if (Po.isRetained_on_shelf
-                                    && (N_rec_SI[zone] <= N_recmax_SI)
-                                    && (nrec_jour < Nrec_max_today)) {
-                                N_rec_SI[zone] += 1;
-                                nrec_jour += 1;
-                                Po.living = true;
-                                Po.isRecruited = true;
-//System.out.println("Un recruté! jour = " + jour + "  lat = " + Po.lat_init);
-
-                                try {
-                                    Sim_writer.write_DataIndiv_NetCDF(Po);
-                                } catch (Exception ex) {
-                                    System.out.println((new StringBuilder()).append("probleme dans ecriture netcdf DataIndiv : ").append(ex.getMessage()).toString());
-                                }
-                            } else {
-                                Po.living = false;
-                                Po.Cause_de_la_mort = "NO_RECRUIT";
-                            }
-                        }
+                    if ((Po.lat > Dataset_EVOL.lat_max) || (Po.lat < Dataset_EVOL.lat_min)) {                    
+                        Po.living = false;
+                        Po.Cause_de_la_mort = "Rout_lat";
+                    break;
                     }
+                    Test_rec_larve(Po); // <-- test de survie des larves
 
                     if (Simulation.TEST_KINESIS == false) {
                         // PONTE ||
@@ -238,9 +148,7 @@ public class Population {
                             }
                         }
                     }
-                    if (Simulation.TEST_KINESIS) {
-                        Po.isRecruited = true;
-                    }
+
 
                     // ** POISSON MORT : SUPPRESSION DE LA LISTE (Sauvegarde? à voir +tard ...)
 //                Po.living = Po.DEB. A VOIR
@@ -280,25 +188,16 @@ public class Population {
                 }
                 if (agemax < Po.age) {
                     agemax = Po.age;
+                    effectif_agemax = (int) Po.S;
                 }
             } // fin de la boucle sur les individus
 
-// 27 juin 2014 : il semble qu'il vaut mieux enlever les indiv mort de la liste ici plutôt que au fur et a mesure (dans la boucle sur les indiv)
-            int fin = Pop.size() - 1;
-            for (int s = fin; s
-                    >= 0; s--) {
-                Poissons Po = (Poissons) Pop.get(s);
 
-                if (!Po.living) {
-                    Pop.remove(s);
-                }
-            }
 
             if ((jour % 10) == 0) {
-                System.out.println("GEN " + Simulation.compteur_year + " :  jour de l'annee: " + jour + " ------ Pop.size = " + Pop.size() + "  Larves : " + compteur_larves + " ; Juveniles : " + compteur_juveniles + "  ; Adultes : " + compteur_adultes + " ; agemax = " + agemax);
+                System.out.println("GEN " + Simulation.compteur_year + " :  jour de l'annee: " + jour + " ------ Pop.size = " + Pop.size() + "  Larves : " + compteur_larves + " ; Juveniles : " + compteur_juveniles + "  ; Adultes : " + compteur_adultes + " ; agemax = " + agemax + " ; effectif_agemax = " + effectif_agemax);
             }
 
-//+ AJOUTER LE TRUC "DEUXIEME PASSAGE" <--- ???
             if ((jour % Simulation.dt_output) == 0) {
                 System.out.println("Enregistrement netcdf : jour" + jour);
 
@@ -317,6 +216,17 @@ public class Population {
                 // compteur de pas de temps pour le netcdf : 
                 Simulation.compteur_t_rec_intra_year++;
             }
+// --------- Suppression des individus mort... -------
+            int fin = Pop.size() - 1;
+            for (int s = fin; s
+                    >= 0; s--) {
+                Poissons Po = (Poissons) Pop.get(s);
+
+                if (!Po.living) {
+                    Pop.remove(s);
+                }
+            }
+// ---------------------------------------------------                        
         }// fin de la boucle sur les jours        
     }
 
@@ -338,6 +248,10 @@ public class Population {
 
         System.out.println("x_min = " + Math.round(x_min) + " ; x_max = " + Math.round(x_max));
         System.out.println("y_min = " + Math.round(y_min) + " ; y_max = " + Math.round(y_max));
+
+if(x_max<0) {
+    System.out.println("PROBLEME ! x_max = " + x_max); 
+System.exit(0);}
 
         // Nombre de strates totale :
         // Nombre de strates potentielles (ou h<3000m)
@@ -520,8 +434,8 @@ public class Population {
             for (int jour = jour_debut_ponte; jour
                     < jour_fin_ponte;
                     jour++) {
-            //System.out.println("Simulation.nb_jours_par_ans = " + Simulation.nb_jours_par_ans);
-                //System.out.println("Simulation.nb_jours_par_ans/Simulation.resolution_temporelle_scanEnv =  " +Simulation.nb_jours_par_ans/Simulation.resolution_temporelle_scanEnv);
+            System.out.println("Simulation.nb_jours_par_ans = " + Simulation.nb_jours_par_ans);
+                System.out.println("Simulation.nb_jours_par_ans/Simulation.resolution_temporelle_scanEnv =  " +Simulation.nb_jours_par_ans/Simulation.resolution_temporelle_scanEnv);
                 for (int p = 0; p < Simulation.nbFishesJour; p++) { // Ici "Simulation.nbFishes_pasdetemps" a été remplacé par "Simulation.nbFishesJour" le 21 mars 2013
                     Poissons Po = new Poissons(jour, Sim_writer);
 //                compteur_id_poissons++;
@@ -895,10 +809,16 @@ public class Population {
                   //  System.out.println("on est bon pour pondre ....  = " );
 
                     // B/ CALCUL DU NOMBRE D'OEUF ET DE SUPER-INDIVIDUS ------------
-                    Po.DEB.spawn(); // calcule Nb_oeuf et met a zero le reproduction Buffer (Er)
-                    // Le nombre de eggs pondu par le super indiv poisson Po est :
+                if (Po.DEB.adult_ready_to_spawn) {
+                    Po.DEB.spawn();
+                }                    // Le nombre de eggs pondu par le super indiv poisson Po est :
                     NEggs = Math.round((Po.S) * (Po.DEB.Nb_oeuf) * SEX_RATIO);
 
+
+                    if (NEggs==0){
+                        System.out.println("NEggs  ="  +   NEggs );
+                    }else if (NEggs>10000){
+                    
                     // Le nombre des nouveau super individu pondu est calculé de façon a conserver un nombre total de super-individus proche de Pop_max :
                 /*N_ponte_pour_fermeture_pop = Math.max( (double) (Simulation.Pop_max / Pop.size()), 1);
                      reste = N_ponte_pour_fermeture_pop - Math.floor(N_ponte_pour_fermeture_pop);
@@ -959,7 +879,9 @@ public class Population {
                         D_strates_temporelle[d] += nb_nouveaux_super_indiv;
                     }
                 }
+                }
             } else {
+                // PAS DE PONTE - rien ne se passe
 //((Po.temp > temperature_min && Po.temp < temperature_max) && // 2 HOMING TEMPERATURE
                 // System.out.println("... mais environnement pas acceptable = Po.temp = " + Po.temp  + " ; Po.salt = " + Po.salt);
             }
@@ -1203,10 +1125,15 @@ public class Population {
             if ((jour % 10) == 0) {
                 System.out.println("TEST_DEB - GEN " + Simulation.compteur_year + " :  jour de l'annee: " + jour + " -------------- Pop.size = " + Pop.size());
             } // nb_jours_ecoule_entre_roms_records : Aconserver pour avoir le même pas de temps que dans le vrai run
-/*            if (jour % Dataset_EVOL.dt_HyMo == 0) {
+            if (jour % 30 == 0) {
+                try {
+                    Dataset_EVOL.load_data(jour, Simulation.year);
+                } catch (IOException e) {
+                    System.out.println("probleme load_data : " + e.getMessage());
+                }
                 nb_jours_ecoule_entre_roms_records = 0;
             }
-*/
+
             //**** ICI ON PARCOUR LA POPULATION --------------------------------
             for (int s = 0; s
                     < Pop.size(); s++) {
@@ -1327,4 +1254,63 @@ public class Population {
 
         }
     } // end of class
+
+
+
+    void Test_rec_larve(Poissons Po){
+
+                    // TEST DE RECRUTEMENT DES LARVES : A terme, il faudra REMPLACEE PAR LA SURVIE QUI DEPEND DE LA BOUFFE?
+                    // * (a travers la mortalite size-dependant)
+                    if (Simulation.TEST_KINESIS == false) {
+                        if (Po.age == Simulation.ageMinAtRecruitment) {
+                            //    Test_retention a 30 jours:
+                            if (Simulation.flagRET_shelf) {
+                                Po.isRetained_on_shelf = Math.abs(Po.bathyActuelle) < Dataset_EVOL.prof_talu;
+                            } else {
+                                Po.isRetained_on_shelf = true;
+                            }
+
+// TEST : PROBA SUCCES DE REC (PAR COMETITION)
+                            int zone = (int) (Math.floor(Po.lat - Dataset_EVOL.lat_min));
+
+// ----------------------// COMPETITION AU RECRUTEMENT //-----------------------
+                            // Cette routine doit permettre de fixer le nombre max
+                            // de Super Individu qui recrutent chaque jour
+                            // ex : on permet au max un super-indiv qui recrute par 1/12eme de degré de latitude
+//                        if ((Po.isRetained_on_shelf) && (N_rec_SI[zone] > N_recmax_SI[zone])) {
+                            //                          System.out.println(" COMPETITION AU RECRUTEMENT !!! - Before : zone =" + zone + "  N_recmax_SI[zone] =  " +  N_recmax_SI[zone] + " - N_rec_SI[zone] = " + N_rec_SI[zone] + "Po.living = "+Po.living);
+                            //                    }
+                            int E_N_recmax_SI = (int) Math.floor(N_recmax_SI[zone]);
+                            float reste = N_recmax_SI[zone] - E_N_recmax_SI;
+                            int pow = 0;
+                            if (Math.random() < reste) {
+                                pow = 1;
+                            }
+                            int N_recmax_SI = (int) E_N_recmax_SI + pow;
+
+                            if (Po.isRetained_on_shelf
+                                    && (N_rec_SI[zone] <= N_recmax_SI)
+                                    && (nrec_jour < Simulation.nrec_max_jour)) {
+                                N_rec_SI[zone] += 1;
+                                nrec_jour += 1;
+                                Po.living = true;
+                                Po.isRecruited = true;
+//System.out.println("Un recruté! jour = " + jour + "  lat = " + Po.lat_init);
+
+                                try {
+                                    Sim_writer.write_DataIndiv_NetCDF(Po);
+                                } catch (Exception ex) {
+                                    System.out.println((new StringBuilder()).append("probleme dans ecriture netcdf DataIndiv : ").append(ex.getMessage()).toString());
+                                }
+                            } else {
+                                Po.living = false;
+                                Po.Cause_de_la_mort = "SNO_RECRUIT";
+                            }
+                        }
+                    }else{
+                    Po.isRecruited = true; // (si test_kinesis)
+                    }
+                    
+}
+
 }

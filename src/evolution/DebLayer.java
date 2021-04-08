@@ -278,7 +278,7 @@ public abstract class DebLayer {
                 if ((Gonade_buffer < E_Hbatch)) { 
                  // Si les gonades ne sont pas matures ou videe après une serie de ponte..
                 // System.out.println("Gonade size = " + E_Hg + " ; Gonade_buffer = " + Gonade_buffer + " ; E_Hbatch = " + E_Hbatch + " ; E_R = " + E_R);                
-                      //  System.out.println(" Gonade prête ");                                           
+                      //  System.out.println(" Gonade prête ");
                         Gonade_buffer = E_Hbatch; // Le Buffer de Gonade est rempli
                         E_R = E_Hg; // Et E_R est remis a sa valeur minimale de E_Hg
                     //    System.out.println(" E_R est remis a sa valeur minimale (E_Hg) ");
@@ -287,13 +287,10 @@ public abstract class DebLayer {
                 // en principe il se vide au moment de la ponte mais si il n'y a pas ponte (ex : environnement défavorable)
                     // alors l'enegie en surplus de ce qu'il faudrait pour relacher un batch est perdue : 
                     E_H = E_Hg + E_Hbatch;                                    
-                }
-                
-                 
+                }                                 
                 }
             }
-        
-    
+            
             // sinon, si le buffer de Gonade EST remplis..
             // Les gonades sont prête pour un cycle de batch spawning
             // Prêt à pondre si il y a suffisament d'énergie pour un bacth
@@ -303,7 +300,6 @@ public abstract class DebLayer {
            // System.out.println(" adult_ready_to_spawn = " + adult_ready_to_spawn);
            // }
 //adult_ready_to_spawn = ((E_R > E_Hg) && (E_Hg> E_Hbatch));                 
-
         }
     }
 
@@ -376,9 +372,22 @@ public abstract class DebLayer {
     }
 
     public void spawn() { // EN COURS
-        Nb_oeuf =  Nb_eggs_min; // (meme chose que  Math.round(kap_R * E_Hbatch / E_init);)
+        
+        
+if (Gonade_buffer>E_Hbatch){
+    if (E_R > E_Hbatch){
         Gonade_buffer = Gonade_buffer - E_Hbatch; // on entame la gonade
-        E_R = E_R -E_Hbatch;
+        E_R = E_R -E_Hbatch;        
+        Nb_oeuf =  Nb_eggs_min; // (meme chose que  Math.round(kap_R * E_Hbatch / E_init);)
+    }
+    else {Nb_oeuf = 0;}
+}
+
+        if (E_R <0) {
+System.out.println(" E_R = " + E_R);
+System.out.println(" Gonade_buffer = " + Gonade_buffer);
+
+        }
     }
 
     public static double getcT(double temperature) {

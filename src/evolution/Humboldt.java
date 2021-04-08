@@ -1,21 +1,9 @@
 package evolution;
 
-/**
- *
- * @author timbrochier
- */
-public class Senegal extends Dataset_EVOL {
+public class Humboldt extends Dataset_EVOL {
 
-
-// [EVOL2010] : Les parametres sont presque tous lu dans le fichier config.
-// Seul reste a specifier ici :
-//        - la liste des annees et celle des profondeur potentielles (pour
-    // homing environnemental) car pas trouver comment lire une liste dans le
-// // fichier config
-//        - le Nom des variables dans le netcdf output de roms, car ca ne change
-    // presque jamais (getFieldsName)
-    public Senegal() {
-
+    public Humboldt() {
+       
         // INITIALISATION DU FICHIER CONFIG :
         util.Lire_configuration param_config = new util.Lire_configuration();
         try {
@@ -85,22 +73,11 @@ public class Senegal extends Dataset_EVOL {
 
         // LISTE YEAR :
 
-        if (region.equals("SENEGAL")) {
-            // liste PERU_PISCES (jeudi 4 juin 2009)
-//            yearlist100 = new int[]{6, 6, 6, 6, 6, 6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6};
-//            yearlist100 = new int[]{1980, 1981,1982,1980, 1981,1982,1980, 1981,1982,1980, 1981,1982,1980, 1981,1982,1980, 1981,1982};
-//            yearlist100 = new int[]{1980, 1981, 1982,1983,1984, 1985,1986,1987, 1988,1989,1990, 1991,1992,1993, 1994,1995,1996, 1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009};
-            yearlist100 = new int[]{0,0,0,0,0,0,0,1980, 1981, 1982,1983,1984, 1985,1986,1987, 1988,1989,1990, 1991,1992,1993, 1994,1995,1996, 1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009};
-//            yearlist100 = new int[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-//            yearlist100 = new int[]{1980,1984,0,2000,2001,1995,1999,1980, 1981, 1982,1983,1984, 1985,1986,1987, 1988,1989,1990, 1991,1992,1993, 1994,1995,1996, 1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009};
-
-        } else if (region.equals("PERU")) {
-            yearlist100 = new int[]{1995, 12, 13, 15, 1999, 1992, 1994, 1993, 1992, 1997, 15, 1993, 15, 1992, 1998, 1994, 1996, 13, 12, 1996, 1996, 13, 1992, 15, 1994, 1994, 1999, 14, 13, 14, 1994, 1999, 14, 1996, 2000, 1998, 1999, 1995, 14, 1992, 2000, 12, 1993, 12, 1999, 2000, 1992, 1994, 1997, 1992, 1997, 14, 15, 1995, 1992, 1997, 12, 1998, 1998, 1997, 12, 1999, 15, 13, 1996, 12, 1996, 1995, 2000, 1993, 1997, 1993, 1998, 2000, 15, 1994, 14, 1997, 1995, 1993, 1993, 14, 1994, 12, 1993, 13, 13, 1999, 2000, 1998, 14, 1996, 13, 1995, 1995, 1996, 1995, 1998, 15, 2000};
-        }
-
-        // POUR OPPORTUNISME  et Homing Environnemental :
-        //   ZONE DE PONTE POTENTIELLE: zone initiale
-        //   PROFONDEUR DES ZONES DE PONTE POTENTIELLE :
+//        yearlist100 = new int[]{2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008 };
+// sans 2000 : 
+yearlist100 = new int[]{2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008,2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008 };
+        
+//   PROFONDEUR DES ZONES DE PONTE POTENTIELLE :
 //        prof_potentielles = new int[]{-5, -10, -15, -20, -25, -30, -35, -40, -45, -50};
         //prof_potentielles = new int[]{-5, -15};
         prof_potentielles = new int[]{-10};
@@ -169,5 +146,6 @@ public class Senegal extends Dataset_EVOL {
         strNanoPhytoChl = "NCHL";
 */
     }
-
+    //---------- End of class
 }
+

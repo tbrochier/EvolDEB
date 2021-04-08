@@ -1,8 +1,8 @@
 package evolution;
 
-public class Chili extends Dataset_EVOL {
+public class ChanelSorene extends Dataset_EVOL {
 
-    public Chili() {
+    public ChanelSorene() {
 
         region = "CHILI";
         // Pour la grille roms Peru10,  1 maille =9km (1/9°)

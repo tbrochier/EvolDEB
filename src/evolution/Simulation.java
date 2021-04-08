@@ -46,6 +46,8 @@ public class Simulation extends Object {
             Flag_pref_bouffe_nage, RECORD_TRACE;
     public static float Body_length_TEST_KINESIS;
 
+    static double taux_emprise_courant;
+    
     //public static int[] Nb_strates_poisson; //Nb_strates_date
     static int nbre_generations, dt_output;
     public static String Strategie, output_dir;
@@ -55,7 +57,7 @@ public class Simulation extends Object {
     static boolean ADVECTION, FLAG_KinesisDD, FLAG_PLANKTON_INTEG;
     ;
         // pour tester DEB tout seul, avec T et f donnés dans poisson...
-    public static boolean TEST_DEB_flag;
+    public static boolean TEST_DEB_flag, TEST_DEB_flag_envir_zone;
 
     // OPPORTUNISME
     // cible
@@ -70,7 +72,7 @@ public class Simulation extends Object {
     public static double[][][] Chla;  // Chlorophylle de surface (SeaWiFS)
     int[] liste_year_TEST_CRIT_REC;
     public static boolean HomingGeographique, HomingTemporel, HomingTemperature, HomingSalinite, HomingBathymetrie, HomingHBL;
-    static float nrec_max_jour;
+    public static float nrec_max_jour;
     public static double Vitesse_max_Bls, delta_kinesis;
 
     // --------------------- END OF VARIABLES DECARATIONS ----------------------
@@ -78,7 +80,8 @@ public class Simulation extends Object {
         //-------------- PARAMETRES A DEFINIR PAR L'UTILISATEUR ------------------------
 
 // A -  LA REGION
-        dataset_EVOL = new Senegal(); //<-- ICI METTRE Peru OU CANARY OU Chile
+//        dataset_EVOL = new Senegal(); //<-- ICI METTRE Peru OU CANARY OU Chile
+        dataset_EVOL = new Humboldt(); //<-- ICI METTRE Peru OU CANARY OU Chile
 
         outpout_netcdf_flag = true;
         if (outpout_netcdf_flag) {
@@ -139,6 +142,10 @@ public class Simulation extends Object {
             // mais il va manquer le cout de la migration en tant que tel (le fait d'avoir une nage plus dynamique)
             // donc ceux qui migrent + devraient etre avantagé
             flag_sigma_t_swim_evolutif = false;
+
+            // Taux d'emprise du courant : varie entre 0 (courant n'a pas d'emprise) et 1 (emprise max)
+            // c'est pour paramétriser le fait que les adultes sont en mesure d'eviter l'advection des forts courant de surface par leur comportement sur la verticale.
+            taux_emprise_courant = Dataset_EVOL.param_config.getConfig_double("emprise_courant"); 
 
 // D - PARAMETRES DE LA STRATEGIE DE PONTE
             // Patchiness
@@ -246,6 +253,10 @@ public class Simulation extends Object {
         }
 
         TEST_DEB_flag = true; // true : T et bouffe constant, pas de spatial
+        // Pour faire des croissances DEB dans des zones definies
+        // (ceci entraine la lecture des sorties ROMS_PISCES)
+        TEST_DEB_flag_envir_zone=true;
+
         TEST_KINESIS = false; // true : champs physique et bioch constants
         Body_length_TEST_KINESIS = 30f;
         RECORD_TRACE = false; // Avec TEST_KINESIS,  Pour enregistrer la trace heure par heure 
@@ -289,8 +300,8 @@ public class Simulation extends Object {
         Pop_max = nbFishesJour * nb_jours_par_ans;
 
         // Initialisation du compteur de generation a 0 (1 generation = 1 year)
-        compteur_year = 0;  // <--------------------- POUR ALLER PLUS VITE EN FIN DE THESE, LE REMETRE A ZERO APRÈS!!!!!!!!!!!!!
-
+        compteur_year = 0; 
+        
         // Selection de la 1er année hydro dans la liste aléatoire
         year = Dataset_EVOL.yearlist100[compteur_year];
 
@@ -353,15 +364,26 @@ public class Simulation extends Object {
         population = new Population(netcdf_outpout_writer);
 
         // TEST DEB debut
-        if (TEST_DEB_flag) {
+        if (TEST_DEB_flag && !TEST_DEB_flag_envir_zone) {
             TEST_DEB();
         }else{
         
         // Calcul de la zone de ponte initiale dans la grille (transfer de lat, lon en i, j)
         population.ZoneGeo2Grid();
-
+        
+if (TEST_DEB_flag && TEST_DEB_flag_envir_zone) {
+        // 1er lecture des champs dynamique
+        try {
+            dataset_EVOL.init();
+        } catch (IOException e) {
+            System.out.println("blem 1: " + e.getMessage());
+            System.exit(0);
+        }
+            TEST_DEB();
+}else{
         // Calcul du nombre de recrue max par degre de latitude de cote
         population.RecMax();
+}
         }
 
 // TEST DEB fin
@@ -371,9 +393,7 @@ public class Simulation extends Object {
 
         // Lancement de la ponte initiale
         System.out.println("Nombre de generations : " + nbre_generations);
-
         PonteInitiale();
-
     }
 
 //---------------------------------------------------------------------------------------------------------------
@@ -559,7 +579,7 @@ public class Simulation extends Object {
 
 // DEBUG : stat de sorties des adultes
             System.out.println(" sortie_NORD : " + Population.sortie_NORD);
-            System.out.println(" sortie_SUD : " + Population.sortie_SUD);
+            System.out.println(" sortie_SUD (rebond): " + Population.sortie_SUD);
             System.out.println(" sortie_EST : " + Population.sortie_EST);
             System.out.println(" sortie_OUEST : " + Population.sortie_OUEST);
             System.out.println(" STARVED LARVAE : " + Population.starved_larvae);
@@ -1047,6 +1067,7 @@ public class Simulation extends Object {
         s.append("flag_swim_temp_natal = " + flag_swim_temp_natal + "\n");
         s.append("Flag_pref_bouffe_nage = " + Flag_pref_bouffe_nage + "\n");
         s.append("TEST_DEB = " + TEST_DEB_flag + "\n");
+        s.append("TEST_DEB_flag_envir_zone = " + TEST_DEB_flag_envir_zone + "\n");
         s.append("TEST_KINESIS = " + TEST_KINESIS + "\n");
         s.append("ADVECTION = " + ADVECTION + "\n");
         s.append("flag_sigma_t_swim_evolutif = " + flag_sigma_t_swim_evolutif + "\n");
@@ -1113,8 +1134,9 @@ public class Simulation extends Object {
 
         while (compteur_year < nbre_generations) {
             year = Dataset_EVOL.yearlist100[compteur_year];
+          //  year = 1999+compteur_year;
 
-            System.out.println("<<<<<<<<<<<<<<<< TEST_DEB - GENERATION " + compteur_year + ">>>>>>>>>>>>>>>>");
+            System.out.println("<<<<<<<<<<<<<<<< TEST_DEB - ANNEE " + year + ">>>>>>>>>>>>>>>>");
 
         // CREATION DU NetCDF --------------------------------------------------
             if (outpout_netcdf_flag) {

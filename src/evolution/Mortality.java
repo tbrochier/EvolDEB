@@ -72,7 +72,7 @@ public class Mortality {
             System.out.println("..   ");
         }
 
-        double beta = 2e-13; // 2e-13 jusqu'au 27 juin (20e-13 ensuite, jusqu'au 5 octobre 2015) 
+        double beta = 1e-12; // 2e-13 jusqu'au 27 juin (20e-13 ensuite, jusqu'au 5 octobre 2015) 
 //double M_sen = Math.min(1, beta*fish_age*fish_age*fish_age);
 //M_senescence = Math.max(M_sen, Mmin);
         M_senescence = Math.min(1, beta * fish_age * fish_age * fish_age);
@@ -111,19 +111,24 @@ public class Mortality {
         } else {
             M_pech = 0;
         }
+        
+        //+ Test mortalite de 1 (tous pêchés) sur le banc d'Arguin
+        // si lat entre 19.35 et 21 et prof < 50m alors M_pech = 1
+        
         return M_pech;
     }
 
-    ;
+;
 
 static double mort_size_function(float fish_length, int stage, int age) {
         double M_pred;
 
-    //float epsilon = L_init/10;
-//    double M = (L_init-epsilon)/fish_length; // mortalite indicative, a multiplier par Mmax pou l'avoir par jour
-        //double M = Math.exp((L_init-epsilon)/fish_length) / Math.exp((L_init-epsilon)/L_init); // mortalite indicative, a multiplier par Mmax pou l'avoir par jour
+    // float epsilon = L_init/10;
+    // double M = (L_init-epsilon)/fish_length; // mortalite indicative, a multiplier par Mmax pou l'avoir par jour
+    // double M = Math.exp((L_init-epsilon)/fish_length) / Math.exp((L_init-epsilon)/L_init); // mortalite indicative, a multiplier par Mmax pou l'avoir par jour
     // Okunishi et al 2012 // voir aussi refs dans Yi Xu et al 2013
-        if (stage == 0) { // Eggs
+
+    if (stage == 0) { // Eggs
             M_pred = 0.57;//0.9 (pour Lmax 44,8); //0.57;
         } else if (stage == 1) { // Yolk sac larvae
             M_pred = 0.3; //0.3;

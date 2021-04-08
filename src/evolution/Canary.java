@@ -56,7 +56,7 @@ public class Canary extends Dataset_EVOL {
         strLon = "lon_rho";
         strLat = "lat_rho";
         strBathy = "h";
-        strMask = "mask_rho";
+        strMask_rho = "mask_rho";
         strU = "u";
         strV = "v";
         strOmega = "omega";

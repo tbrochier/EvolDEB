@@ -2,6 +2,7 @@ package evolution;
 
 //import java.awt.*;
 //import java.util.*;
+import static evolution.Dataset_EVOL.isOnEdge;
 import java.io.*;
 import static java.lang.Double.*;
 
@@ -13,6 +14,11 @@ import util.OutpoutManager_netcdf;
 public class Poissons {
 // ----------------------------------------------------------------------------   
 
+    double temp_increase_CC = 0;
+    // pour experience canaries PREFACE FINALE : on essaie une augmentationde temperature uniforme
+    // --> quel impact sur la limite nord?
+    
+    
     OutpoutManager_netcdf Sim_writer_trace;
 
     public static int compteur_advec;
@@ -78,9 +84,9 @@ public class Poissons {
     
 // ----------------------------------------------------------------------------
     public Poissons(int jour, OutpoutManager_netcdf bi) {
-// modif 8dec2014
+System.out.println(" jour = " + jour);
+
         this.Sim_writer_trace = bi;
-// ) {
 
        //S = Simulation.nbeggs_max_per_SI; // Nbre dd'individus que représente le super indiv.
         ss = 0;
@@ -93,6 +99,12 @@ public class Poissons {
             y = Population.y_min + Math.random() * (Population.y_max - 1 - Population.y_min);
             poids = -999;
 
+//            System.out.println(" x = " + x + "   y = " + y );
+//            System.out.println(" Population.x_min = " + Population.x_min + "   Population.x_max = " + Population.x_max );
+//            System.out.println(" Population.y_min = " + Population.y_min + "   Population.y_max = " + Population.y_max );
+            
+            
+                    
             // if ((x < Population.x_min) || (y < Population.y_min)) {
             //     System.out.println(" x = " + x + " y = " + y + " depth = " + depth);
             //}
@@ -103,9 +115,9 @@ public class Poissons {
             double yi = y;
             depth = (float) -(Dataset_EVOL.prof_ponte_min + Math.random() * (Dataset_EVOL.prof_ponte_max - Dataset_EVOL.prof_ponte_min));
 
-            z = Dataset_EVOL.depth2z(x, y, depth - Simulation.decalage_zeta);
+     
 
-            if (Simulation.TEST_DEB_flag){
+            if (Simulation.TEST_DEB_flag && Simulation.TEST_DEB_flag_envir_zone==false){
               outZones = false;
             }else{
             outZones = (!Dataset_EVOL.isInWater(ix, iy))
@@ -471,7 +483,7 @@ public class Poissons {
 
 // DEB -- -- -- -- - - - --
         DEB = new Sardinella_aurita();//DebLayer();
-        //DEB = new Sardina_pilchardus();//DebLayer();        
+       // DEB = new Sardina_pilchardus();//DebLayer();        
         DEB.init();
         first_spawn = true;
 // ---------------------------
@@ -521,6 +533,7 @@ public class Poissons {
         V_kinesis_old = new double[]{0, 0, 0}; // composante x,y,z de la nage donne par la kinesis
         V_kinesis = new double[]{0, 0, 0}; // composante x,y,z de la nage donne par la kinesis
 
+        Cause_de_la_mort = "0";
     }
 
     /*
@@ -686,28 +699,28 @@ public class Poissons {
     void auBord() {
 
         if (compteur_standstill > 24) {
-            //   System.out.println("MORT en STAND STILL-------------------------");
+               System.out.println("MORT en STAND STILL-------------------------");
             living = false;
-            Cause_de_la_mort = "standstill";
+            Cause_de_la_mort = "Astandstill";
 
         }
         if ((x > Dataset_EVOL.nx - 3.0f) || (x < 3.0f)) {
             living = false;
-            Cause_de_la_mort = "aubord";
-            //     System.out.println("MORT AU BORD EST OU OUEST-------------------------");
+            Cause_de_la_mort = "Baubord";
+                 System.out.println("MORT AU BORD EST OU OUEST-------------------------");
         }
 
         if ((y > Dataset_EVOL.ny - 3.0f) || (y < 3.0f)) {
             living = false;
-            Cause_de_la_mort = "aubord";
-            //     System.out.println("MORT AU BORD NORD OU SUD -------------------------");
+            Cause_de_la_mort = "Baubord";
+                 System.out.println("MORT AU BORD NORD OU SUD -------------------------");
         }
 
 // TEST SUR LA PROFONDEUR :
         // 1 - Poisson dans la colonne d'eau (entre fond et surface)??
         if ((depth < bathyActuelle) || (depth > 0)) {
             living = false;
-            Cause_de_la_mort = "aufond_enlair";
+            Cause_de_la_mort = "Caufond_enlair";
             // System.out.println("bathyActuelle = " + bathyActuelle + " ; depth = " + depth + "  -> MORT AU BORD");
             System.out.println("problem avec la profondeur de ce poisson. depth = " + depth);
             //System.out.println("bathyActuelle 2 = " + bathyActuelle);
@@ -717,25 +730,25 @@ public class Poissons {
         // AUTRES TEST :
         if (depth > 0) {
             living = false;
-            Cause_de_la_mort = "enlair";
+            Cause_de_la_mort = "Denlair";
             System.out.println("depth = " + depth + "MORT EN L'AIR");
         }
 
         if (!Dataset_EVOL.isInWater(x, y)) {
-            //      System.out.println("MORT A TERRE");
+                  System.out.println("MORT A TERRE");
             living = false;
-            Cause_de_la_mort = "aterre";
+            Cause_de_la_mort = "Eaterre";
         }
 
         if (Dataset_EVOL.isOnEdge(x, y)) {
             living = false;
-            Cause_de_la_mort = "isOnEdge";
-            //       System.out.println("Mort ON EDGE");
+            Cause_de_la_mort = "FisOnEdge";
+                   System.out.println("Mort ON EDGE");
         }
 
         if (Dataset_EVOL.isCloseToCost(x, y)) {
             living = false;
-            Cause_de_la_mort = "CloseToCost";
+            Cause_de_la_mort = "ICloseToCost";
             System.out.println("Mort CLOSE TO COAST");
         }
         // TEST DEBUG :
@@ -752,52 +765,42 @@ public class Poissons {
 // Indiv dans la zone consideree?
         //sinon on les y remet!
         if (y > Population.y_max) {
-            System.out.println("poisson quitte le domaine par le le Nord ");
+       //     System.out.println("poisson quitte le domaine par le le Nord : lon = " + lon + " ; lat = " + lat);
 //               y = Population.y_max - 1;
             Population.sortie_NORD++;
             living = false;
-            Cause_de_la_mort = "sortie_NORD";
+            Cause_de_la_mort = "Jsortie_NORD";
 
         }
         if (x > Population.x_max) {
 //            x = Population.x_max-1;
-            //     System.out.println("poisson quitte le domaine par le l'Est ");
+            //     System.out.println("poisson quitte le domaine par le l'Est : lon = " + lon + " ; lat = " + lat);
             Population.sortie_EST++;
             living = false;
-            Cause_de_la_mort = "sortie_EST";
+            Cause_de_la_mort = "Ksortie_EST";
         }
         if (y < Population.y_min) {
 //            y = Population.y_min+1;
-            //     System.out.println("poisson quitte le domaine par le Sud ");
+           //      System.out.println("poisson quitte le domaine par le Sud  : lon = " + lon + " ; lat = " + lat);
             Population.sortie_SUD++;
-            Cause_de_la_mort = "sortie_SUD";
-            living = false;
+            
+            // modif du 9 Novembre : on conserve les indiv sur la frontière sud
+//      System.out.println("poisson rebondit sur frontiere Sud  : lon = " + lon + " ; lat = " + lat + " longueur du corps = " + this.Body_length);
+      y = Population.y_min+1;
+//            Cause_de_la_mort = "Lsortie_SUD";
+//            living = false;
         }
         if (x < Population.x_min) {
 //            x = Population.x_min+1;
-            //      System.out.println("!!!!!!!!! poisson quitte le domaine par l'Ouest ");
+            //      System.out.println("!!!!!!!!! poisson quitte le domaine par l'Ouest : lon = " + lon + " ; lat = " + lat);
             Population.sortie_OUEST++;
             living = false;
-            Cause_de_la_mort = "sortie_OUEST";
+            Cause_de_la_mort = "Msortie_OUEST";
+                    //: lon = " + lon + " ; lat = " + lat;
         }
 
-// MORTALITE Super Individu -----------------------        
-// Starvation :  
-        if (this.Body_length > 5) {
-            double poids_theorique_des_indiv;
+        mortalite_super_indiv();
 
-// FREON 1988 : 
-            double c = 6.392e-3;
-            double b = 3.142;
-            poids_theorique_des_indiv = c * Math.pow(this.Body_length, b);
-
-            if (this.weight < poids_theorique_des_indiv*0.1) {
-                living = false;
-                Population.starved++;
-                Cause_de_la_mort = "Starvation";
-//System.out.println(" Body_length = "+ this.Body_length + " cm ; poids_theorique_des_indiv " + poids_theorique_des_indiv +" g ;  weight = " + this.weight + " g  ; " + this.DEB.stade + " ; Bathy = " + this.bathyActuelle);        
-            }
-        }
 
 
         
@@ -908,7 +911,7 @@ public class Poissons {
             strate_temp++;
             if (strate_temp >= Simulation.nb_strat_temporelles) {
                 living = false;
-                Cause_de_la_mort = "no_spawnENV";
+                Cause_de_la_mort = "Ono_spawnENV";
                 break;
                 // pas d'env de ponte, individu non selectionne.
                 // (Il faudra considerer cette condition a partir d'un age = > juveniles,
@@ -934,12 +937,15 @@ public class Poissons {
 
         double dt_frac; // 1/nbiter
         int dt_adapt = Simulation.dt_advec;
+        int threshold_metamorphose = 5;//
         
         bathyActuelle = 0;//-50000;//(float) getDepthBottom(x, y);
 
-        temp = 18;
+// T 19 / bouffe = 6 * DEB.X_K
+        temp = 19;
         bouffe = 6 * DEB.X_K; // --> 100000 * DEB.X_K = bouffe non limitante (X_K = demisaturation)
-
+// --> ATTENTION, si on veut temp et bouffe extraits d'une zone/periode particulière, actifiver le flag ci-dessous:
+// voir le flag Simulation TEST_DEB_flag_envir_zone
         //            System.out.println(" TEST stepSerial_TEST_DEB temp =  " + temp + " bouffe = " +  bouffe + "  ((double) Simulation.dt_advec / 24) = " +  ((double) Simulation.dt_advec / 24));
         //System.out.println("NEW DEPLACE ... jj = " + jj + "****************************");
         // *****************************************************
@@ -955,20 +961,151 @@ public class Poissons {
 
         //System.out.println("it_debut = " + it_debut + " ; it_fin = " + it_fin);
         // *****************************************************
-        dt_frac = 1.0f / Simulation.nbiter;
+double dt_mvt = Simulation.dt_advec;
+float heure;
+dt_frac = 1.0f / Simulation.nbiter;
         for (int it = it_debut; it < it_fin; it++) {
             double frac = it * dt_frac;
 // --FIN DU COMPLIQUE ET VALIDE (si,si) ----
+            // Heure de la journee :
+            float fraction_heure = ((float) dt_mvt) / 60;
+            heure = it * fraction_heure + 1;
+            while (heure > 24) {
+                heure = heure - 24;
+            }
 
-            int old_stade = DEB.stade;
+            
+if (Simulation.TEST_DEB_flag_envir_zone){        
+// 5 juillet 2017
+// lire temp et bouffe dans a une position fixe
+// pour comparer les croissance d'individus sédentaires
 
+// SUD CHILI : 
+/*
+double lat_min_test_DEB = -40;
+double lat_max_test_DEB = -30;
+double lon_min_test_DEB = -90;
+double lon_max_test_DEB = -70;
+int bat_max_test_DEB = 500;    
+*/
+
+// CENTRE : 
+double lat_min_test_DEB = -25;
+double lat_max_test_DEB = -15;
+double lon_min_test_DEB = -90;
+double lon_max_test_DEB = -70;
+int bat_max_test_DEB = 500;
+
+/*
+System.out.println("Zone pour TEST DEB : ");
+System.out.println(" lat_min = " + lat_min_test_DEB + " ; lon_min = " + lon_min_test_DEB);  
+System.out.println(" lat_max = " + lat_max_test_DEB + " ; lon_max = " + lon_max_test_DEB);
+*/
+        double[] pGrid;
+        pGrid = Dataset_EVOL.geo2Grid(lon_min_test_DEB, lat_min_test_DEB);
+        double x_min_test_DEB = pGrid[0];
+        double y_min_test_DEB = pGrid[1];
+        pGrid = Dataset_EVOL.geo2Grid(lon_max_test_DEB, lat_max_test_DEB);
+        double x_max_test_DEB = pGrid[0];
+        double y_max_test_DEB = pGrid[1];
+
+// plus simple : prenons directement les bornes de x et y en regardant mask_rho "a la main"
+
+/*// Senegal SUD: 
+x_min_test_DEB = 30;
+y_min_test_DEB = 80;
+x_max_test_DEB = 50;
+y_max_test_DEB = 83;
+        // on tire une position aleatoire dans la zone...
+        x = x_min_test_DEB + Math.random() * (x_max_test_DEB - 1 - x_min_test_DEB);        
+        y = y_min_test_DEB + Math.random() * (y_max_test_DEB - 1 - y_min_test_DEB);
+*/        
+
+// copier coller de Poisson(jour)
+boolean outZones = true;
+ss=0;
+while (outZones) {
+
+    int bat_max = bat_max_test_DEB;
+        x = x_min_test_DEB + Math.random() * (x_max_test_DEB - 1 - x_min_test_DEB);        
+        y = y_min_test_DEB + Math.random() * (y_max_test_DEB - 1 - y_min_test_DEB);
+           
+    int ix = (int) x;
+    int iy = (int) y;    
+    double xi = x;    
+    double yi = y;    
+    depth = (float) -(Dataset_EVOL.prof_ponte_min + Math.random() * (Dataset_EVOL.prof_ponte_max - Dataset_EVOL.prof_ponte_min));
+    z = Dataset_EVOL.depth2z(x, y, depth - Simulation.decalage_zeta);
+
+    outZones = (!Dataset_EVOL.isInWater(ix, iy))
+            || (depth < getDepthBottom(x, y))
+              
+            || (x > (x_max_test_DEB))
+            || (x < x_min_test_DEB)
+                    || (y > y_max_test_DEB)
+                    || (y < y_min_test_DEB)
+                    || (Math.abs(x - xi) > 1.0f)
+                    || (Math.abs(y - yi) > 1.0f)
+                    || (Dataset_EVOL.isCloseToCost(x, y))
+                    || (Dataset_EVOL.getBathy(ix, iy) > bat_max);
+            ss++;
+            }            
+            if (ss > 10000) {
+                System.out.println("impossible  ZONE TEST_DEB  x = " + x + " y = " + y + " depth = " + depth);
+                System.exit(0);
+            }
+                positGeog3D();
+
+}
+        
+
+        // On gere ici la profondeur (utile si lecture T et bouffe sefond a la profondeur)
+        
+            if (age <= Simulation.egg_duration) {
+                Egg_buoyancy();
+                // puis larve passive entre eclosion et resorbption du sac vitellin fixe a 4 fois le temmps d'incubation de l'oeuf.
+            } else if ((age > (Simulation.egg_duration + Simulation.YolkSacLarvae_duration)) & (Body_length < threshold_metamorphose)) {
+                DVM_larves();
+            } else {
+                Vertical_behavior(heure);
+            }
+            // Correctif sur la profondeur
+            corr_depth();
+            z = Dataset_EVOL.depth2z(x, y, depth - Simulation.decalage_zeta);
+
+        
+
+            try {
+                // 1 - LECTURE/INTERPOLATION DES CHAMPS TEMPERATURE ET SALINITE :
+                TS = Dataset_EVOL.getFields_SaltTemp(x, y, z, frac);
+                SST = Dataset_EVOL.getTemperature(x, y, 32, frac) + temp_increase_CC;
+                temp = TS[0] + temp_increase_CC;
+                 
+                if (temp<5){                    
+                 System.out.println("temp = " + temp + "depth = " + depth + "  ; z = " + z + "  x = " + x + " ; y = " + y + " jour = "  + jour );
+
+                 System.out.println("(Dataset_EVOL.getBathy(x, y) = " + Dataset_EVOL.getBathy((int) x, (int) y));
+                TS = Dataset_EVOL.getFields_SaltTemp(x, y, z, frac);
+                 boolean test = isOnEdge(x, y);
+                 System.exit(1);
+
+                }
+                
+                get_bouffe(frac); // actualise "bouffe"
+            } catch (IOException e) {
+                System.out.println(" probleme dans TEST_DEB lecture environnment par zone : " + e.getMessage());
+            }
+            
+//System.out.println(" Age =  : " + age + " ; f = " +  (bouffe / (bouffe + DEB.X_K) ) + " ; temperature = " + temp);
+// fin ajout 5 juillet 2017
+                
             ///////////// ----- G R O W T H ------------------------------------------------
             double dt_en_jours = ((double) dt_adapt / 24) / 60;
             DEB.execute(temp, bouffe, (double) dt_en_jours);
+//System.out.println(" DEB.stade =  : " + DEB.stade + " manque d'energie pour arriver au stade 1 = " + (DEB.E_Hh - DEB.E_H));
             Body_length = DEB.getLength(); // cm
             weight = DEB.getWeigth();
         
-            //System.out.println("Age = " + (float)Math.round((age + dt_en_jours*it)*100)/100 + " jours ; Body_length = " + (float)Math.round(Body_length*10)/10 + " cm ; Poids = " + Math.round(this.weight) + " g ; Effectif  = " + Math.round(S) + "   DEB.E_H  = " + DEB.E_H);
 
             if (Body_length < 1) {
                 Body_length = 1;
@@ -987,17 +1124,15 @@ public class Poissons {
             S = Mortality.calcul_mortality(Body_length, weight, stade_fix, age, S, biomasse_locale_autres_SI, bathyActuelle, dt_jour, zone);
 
             // SUPRESSION DU SUPER INDIVIDU SI S < 10 ---------------------------------------
-            if (S < 1000) { // car en dessous de 1000 on estimme que ça devient compliqué au niveau de la prédation (pour former des bancs)
-                living = false;
-                Cause_de_la_mort = "under1000";
-                System.out.println("DISPARITION DU BANC DE POISSON num" + id + " --> CarCapa = " + CarCapa + " ;  mortalite predation par jour = " + Mortality.M_predation + " ;  mortalite senescence par jour = " + Mortality.M_senescence);
-            }
+//            if (S < 1000) { // car en dessous de 1000 on estimme que ça devient compliqué au niveau de la prédation (pour former des bancs)
+//                living = false;
+//                Cause_de_la_mort = "Punder1000";
+//                System.out.println("DISPARITION DU BANC DE POISSON num" + id + " --> CarCapa = " + CarCapa + " ;  mortalite predation par jour = " + Mortality.M_predation + " ;  mortalite senescence par jour = " + Mortality.M_senescence);
+   //         System.exit(1);
+//            }
 
-            if (DEB.stade > old_stade) {
-                System.out.println(" Age = " + age + " jours et " + Simulation.dt_advec / 60 * it + " heures -> longueur = " + Body_length + " cm ");
-                System.out.println(" stade = " + DEB.stade + "          E_H = " + DEB.E_H + " -----/oeuf: jusqu'a EH = E_Hh = " + DEB.E_Hh + " Yolk sac larve : E_Hb = " + DEB.E_Hb + " --- feeding larvae : E_Hj = " + DEB.E_Hj + " --- Juvenile : E_Hp = " + DEB.E_Hp + "  --- adult : EH > E_Hp");
-            }
-            old_stade = DEB.stade;
+//                System.out.println(" Age = " + age + " jours et " + Simulation.dt_advec / 60 * it + " heures -> longueur = " + Body_length + " cm ");
+//                System.out.println(" stade = " + DEB.stade + "          E_H = " + DEB.E_H + " -----/oeuf: jusqu'a EH = E_Hh = " + DEB.E_Hh + " Yolk sac larve : E_Hb = " + DEB.E_Hb + " --- feeding larvae : E_Hj = " + DEB.E_Hj + " --- Juvenile : E_Hp = " + DEB.E_Hp + "  --- adult : EH > E_Hp");
 
           //  System.out.println(" Age = " + age + " jours et " + Simulation.dt_advec/60 * it + " heures -> longueur = " + Body_length + " cm  Effectif = " + S );
             //if (DEB.stade ==4){
@@ -1008,19 +1143,20 @@ public class Poissons {
              */
         }
             // : -------- R E P R O D U C T I O N -------------------------------------
-        // 1 - Check si indiv mature et prêt à pondre
-        // 2 - Si oui, PONDRE un nombre d'individu donné par DEB
-        // + tard : check de l'environnement
-        //          si envir_ok = true --> ponte
-        //          si envir_ok = false --> MIGRATION VERS envir_ok
+// LA PONTE EST DEJA SIMULEE DANS POPULATION ligne 1149
 
-       //        Simulons la repro : 
-        if (DEB.adult_ready_to_spawn){
-            DEB.spawn();
-        }
            System.out.println("Age = " + age + " jours ; Body_length = " + (float)Math.round(Body_length*10)/10 + " cm ; Poids = " + Math.round(this.weight) + " g ; Effectif  = " + Math.round(S) + "   DEB.E_H  = " + DEB.E_H);
   System.out.println(" Wet_weigth_Reserve =  " + Math.round(DEB.W_E/(1-(float)DEB.c_w)) + " g ; Wet_weigth_structure " + Math.round(DEB.W_V/(1-(float)DEB.c_w)) + " g ; GONADE_ETENDUE = " + Math.round(DEB.W_ER/(1-(float)DEB.c_w)) + " g ");
+System.out.println( "f = " +  (bouffe / (bouffe + DEB.X_K) ) + " ; temperature = " + temp);
+  
+  mortalite_super_indiv();
+  
+// INCREMENT AGE -------------------------------------------------------
+        age++;
+    }
 
+    
+void mortalite_super_indiv(){
 // MORTALITE Super Individu -----------------------        
 // Starvation :  
         if (this.Body_length > 5) {
@@ -1031,23 +1167,16 @@ public class Poissons {
             double b = 3.142;
             poids_theorique_des_indiv = c * Math.pow(this.Body_length, b);
 
-            if (this.weight < poids_theorique_des_indiv / 2) {
+            if (this.weight < poids_theorique_des_indiv * 0.4) {
                 living = false;
                 Population.starved++;
-                Cause_de_la_mort = "Starvation";
+                Cause_de_la_mort = "NStarvation";
                 System.out.println(" Body_length = " + this.Body_length + " cm ; poids_theorique_des_indiv " + poids_theorique_des_indiv + " g ;  weight = " + this.weight + " g ");
             }
-
-            if (living == false) {
-                System.exit(1);
-            }
         }
-
-// INCREMENT AGE -------------------------------------------------------
-        age++;
-
-    }
-
+}
+// fin mortalite_super_indiv
+    
     void CarCapa_locale_corr_f(int zone) {
 
         // prend en entree la concentration de bouffe intstantanee et un pas de temps
@@ -1139,7 +1268,7 @@ public class Poissons {
             try {
                 // 1 - LECTURE/INTERPOLATION DES CHAMPS TEMPERATURE ET SALINITE :
                 TS = Dataset_EVOL.getFields_SaltTemp(x, y, z, frac);
-                SST = Dataset_EVOL.getTemperature(x, y, 32, frac);
+                SST = Dataset_EVOL.getTemperature(x, y, 32, frac) + temp_increase_CC;
                 grad_temp = (TS[0] - temp) / dist_parcourue_km;
                 //System.out.println("dist_parcourue_km = " + dist_parcourue_km + " ; grad_temp = " + grad_temp);
                 //System.out.println("SST = " + SST );
@@ -1147,7 +1276,7 @@ public class Poissons {
                 if (isNaN(grad_temp)) {
                     grad_temp = 0.001;
                 }
-                temp = TS[0];
+                temp = TS[0] + temp_increase_CC;
                 salt = TS[1];
 
                 if ((age == 1) && (it == 0)) {
@@ -1163,26 +1292,28 @@ public class Poissons {
                 // si beaucoup de biomasse de poissons locale on diminue le f :
                 zone = (int) Math.max(Math.floor(lat - Dataset_EVOL.lat_min),0);
                 CarCapa_locale_corr_f(zone);
-  */              
-                
-                
-                // LECTURE/INTERPOLATION DES COURANTS
+  */
+
+// LECTURE/INTERPOLATION DES COURANTS
                 // SI ADVECTION = ON : LECTURE/INTERPOLATION DES CHAMPS DE VITESSE U, V et W :
-                if (Simulation.ADVECTION && this.Body_length>threshold_metamorphose) {
+//                if (Simulation.ADVECTION){ // && this.Body_length>threshold_metamorphose) { (partie commentée le 21 sept 2017 : c'était un bug semble-t-il
+                if ((Simulation.ADVECTION) || (this.age < Simulation.ageMinAtRecruitment)) { 
                     uv = Dataset_EVOL.getFields_uv(x, y, z, frac, dt_mvt);
                     dx_advec = uv[0];
                     dy_advec = uv[1];
-
-                    if ((dx_advec == 0) && (dy_advec == 0)) {
-                        //System.out.println("dx_advec = " + dx_advec + " ; dy_advec = " + dy_advec);
-                        compteur_standstill = compteur_standstill + 1;
+/*
+                    if (Math.sqrt(dx_advec*dx_advec + dy_advec*dy_advec) < 0.001) {
+                        System.out.println("Math.sqrt(dx_advec*dx_advec + dy_advec*dy_advec) = " + Math.sqrt(dx_advec*dx_advec + dy_advec*dy_advec));
+                        System.out.println("x = " + x + " y = " + y);
+                        
                     }
-//                    dz_advec = uvw[2];
-
-                    /* TEST                   if(frac == it_debut*dt_frac){
-                     System.out.println("Jour = " + jour + " - dx_advec = " + dx_advec);
-                     System.out.println("Jour = " + jour + " - dy_advec = " + dy_advec);
-                     }*/
+  */                  
+                    if ((dx_advec == 0) && (dy_advec == 0)) {
+                        System.out.println("dx_advec = " + dx_advec + " ; dy_advec = " + dy_advec);
+                        System.out.println("STOP ----------- ");
+                        System.exit(1);
+                        
+                    }
                 }
             } catch (IOException e) {
                 System.out.println("youstone on a un probleme dans deplace_individu : " + e.getMessage());
@@ -1212,12 +1343,12 @@ public class Poissons {
             Population.Biom_landings_2D[(int) x][(int) y] = Mortality.Biom_landings;
 
             // SUPRESSION DU SUPER INDIVIDU SI S < 10 ---------------------------------------
-
+            if (Simulation.TEST_KINESIS==false){
             if (S < 1000) { // car en dessous de 1000 on estimme que ça devient compliqué au niveau de la prédation (pour former des bancs)
                 living = false;
-                Cause_de_la_mort = "under1000";
-                        System.out.println("DISPARITION DU BANC DE POISSON num" + id + " --> CarCapa = " + CarCapa + " ;  mortalite predation par jour = " + Mortality.M_predation + " ;  mortalite senescence par jour = " + Mortality.M_senescence);
-            }
+                Cause_de_la_mort = "Punder1000";
+            //            System.out.println("DISPARITION DU BANC DE POISSON num" + id + " --> CarCapa = " + CarCapa + " ;  mortalite predation par jour = " + Mortality.M_predation + " ;  mortalite senescence par jour = " + Mortality.M_senescence);
+            }}
 
             //         System.out.println("Body_length = "+ Body_length+ " , S = " + S + " MORTALITE = " +  mort + " --> new S = " + (int) Math.round(S * Math.exp(-mort)) );
             //        S = (int) Math.round(S * Math.exp(-mort)); (WATKINS ET ROSE)
@@ -1230,6 +1361,8 @@ public class Poissons {
              //depth = -1; // on tester le suivi du champs de bouffe de surface
 //             temp = 20; // Pour que le champs de SST n'interfere pas : la qualité de l'habitat ne dépend que de la bouffe
              Body_length = Simulation.Body_length_TEST_KINESIS; // consideron la nage de poissons de 20cm.
+             
+
              do_kinesis(dt_mvt);
              Vertical_behavior(heure);
              } else if (Body_length > threshold_metamorphose) {
@@ -1244,7 +1377,7 @@ public class Poissons {
             dx_swim = (double) dx_kinesis_swim_km / (double) Population.mean_grid_size;
             dy_swim = (double) dy_kinesis_swim_km / (double) Population.mean_grid_size;
 
-            // A ETTRE DANS UN GETTER appele dans Outpout Manager uniquement (pas la peine de le calculer a chaque fois)
+            // A METTRE DANS UN GETTER appele dans Outpout Manager uniquement (pas la peine de le calculer a chaque fois)
             dx_advec_km = (double) dx_advec * (double) Population.mean_grid_size;
             dy_advec_km = (double) dy_advec * (double) Population.mean_grid_size;
 
@@ -1253,22 +1386,25 @@ public class Poissons {
             //--------- DEPLACEMENT HORIZONTAL DU POISSON : NAGE + AVECTION ----------------
 // ajoutons un facteur de lutte contre le courant de 1 Bls
 //
-            /*            float nage_cc = 0;
+             double emprise_courant_stade = 1;
+             // emprise_courant_stade = 1 pour larves, puis Simulation.taux_emprise_courant
              if (Body_length > threshold_metamorphose){
-             nage_cc = 1.f; // 0 = Resistance au courant
-             // A FAIRE VARIER + SELON LA TAILLE DU POISSON??
+             emprise_courant_stade = Simulation.taux_emprise_courant; // 0 = Resistance au courant
              }
-             float dx_advec_cor = (float) (nage_cc*dx_advec);
-             float dy_advec_cor = (float) (nage_cc*dy_advec);           
-             dx_tot = dx_advec_cor + dx_swim; // ; //+
-             dy_tot =  dy_advec_cor + dy_swim; //dy_swim +
-             */
-            dx_tot = dx_advec + dx_swim; // ; //+
-            dy_tot = dy_advec + dy_swim; //dy_swim +
 
+// Cas normal : on additionne vitesse de nage et Kinesis             
+            dx_tot = dx_advec*emprise_courant_stade + dx_swim; // ; //+
+            dy_tot = dy_advec*emprise_courant_stade + dy_swim; //dy_swim +
+
+            while ((!Dataset_EVOL.isInWater(x + dx_tot, y + dy_tot))
+                || (Dataset_EVOL.isCloseToCost(x + dx_tot, y + dy_tot ))){
+            dx_tot = 2*(Math.random())-1;
+            dy_tot = 2*(Math.random())-1;
+            }
+                                   
 // Verification que le mouvement de NAGE + ADVECTION ne nous amene pas à terre :
             if (Dataset_EVOL.isInWater(x + dx_tot, y + dy_tot) //) {
-                    && (!Dataset_EVOL.isCloseToCost(x + dx_tot, y + dy_tot))) {
+                    && (!Dataset_EVOL.isCloseToCost(x + dx_tot, y + dy_tot ))){
 //                   && (!Dataset_EVOL.isOnEdge(x + dx_tot, y + dy_tot))) {
                 // dans ce cas on effectue le deplacement
                 x = x + dx_tot;
@@ -1302,7 +1438,8 @@ public class Poissons {
                 }
 
             } else {
-                // sinon on s'arrette (stand still) et on met a zero la vitesse de kinesis
+                                    
+                    // sinon on s'arrette (stand still) et on met a zero la vitesse de kinesis
                 V_kinesis[0] = 0;
                 V_kinesis[1] = 0;
                 dist_parcourue_km = 0;
@@ -1322,7 +1459,7 @@ public class Poissons {
 //--------- DEPLACEMENT VERTICAL DU POISSON : NAGE + AVECTION ----------------
             bathyActuelle = (float) getDepthBottom(x, y);
 
-//            if (z + dz_advec < Dataset_EVOL.nz) {
+            // if (z + dz_advec < Dataset_EVOL.nz) {
             // dans ce cas on effectue le deplacement
             //              z = z + dz_advec;
             //        }
@@ -1422,9 +1559,12 @@ public class Poissons {
                 sigma_t = 1;
             } else {
                 // TOLERANCE AUGMENTE AVEC AGE :     
-//                sigma_t = Math.log(Body_length / 3);
-                sigma_t = (Body_length / 10);
-                // TOLERANCE DIMINUE AVEC AGE :     
+                sigma_t = Math.log(Body_length / 3); //<-- test sim 20083
+          //
+       //   sigma_t = (Body_length / 10); // <-- modif; le 20 sept (sim 20082 test avec /30 puis je remet à /10 pour memoire))
+//sigma_t = 1; // sim 9998
+//sigma_t = Math.log(age / 5); // sim 9997
+          // TOLERANCE DIMINUE AVEC AGE :     
                 // double sigma_t = Math.min(4 - Math.log(Body_length / 3), 0.5);
             }
 
@@ -1439,8 +1579,8 @@ public class Poissons {
             // age de 5 ans --> sigma_t = 4.1
         } else {
             T_opt = Simulation.Topp; //(Freon 1986)
-//            sigma_t = 3;
-           sigma_t = (Body_length / 10);
+//          sigma_t = 3;
+            sigma_t = (Body_length / 3); // pour les test de sensib, verifier que meme tolerance que dans le cas Tnat           
         }
            // */
 
@@ -1486,7 +1626,8 @@ public class Poissons {
         if (heure <= 12) { // 12h de jour : bancs + en profondeur
             pic_prof = 30;//12;
         } else { // 12h de nuit : bancs + en surface
-            pic_prof = 20;//6;
+            pic_prof = 20;
+
         }
 
         double prof_abs = Math.abs(Kinesis.getGaussian(pic_prof, variance_prof));
@@ -1502,7 +1643,7 @@ public class Poissons {
 // TEST
         if ((depth < bathyActuelle) || (depth > 0)) {
             living = false;
-            Cause_de_la_mort = "aufondenlair";
+            Cause_de_la_mort = "Caufondenlair";
             // System.out.println("bathyActuelle = " + bathyActuelle + " ; depth = " + depth + "  -> MORT AU BORD");
             System.out.println(" TEST 1 problem avec la profondeur de ce poisson. depth = " + depth);
             //System.out.println("bathyActuelle 2 = " + bathyActuelle);
@@ -1588,21 +1729,8 @@ public class Poissons {
          else {bouffe = 0.5*DEB.X_K;}
 
          }
-         /* // POUR si on veut garder la memoire des concentration de bouffe les plus importantes rencontrées :
-         if (plankton[0] > bouffe_max_0) {
-         bouffe_max_0 = plankton[0];
-         }
-         if (plankton[1] > bouffe_max_1) {
-         bouffe_max_1 = plankton[1];
-         }
-         if (plankton[2] > bouffe_max_2) {
-         bouffe_max_2 = plankton[2];
-         }
-         if (plankton[3] > bouffe_max_3) {
-         bouffe_max_3 = plankton[3];
-         }
-         */
-    }
+         */ 
+}
 
     void imprinting() {
 
@@ -1631,10 +1759,10 @@ public class Poissons {
             isdead_temp = ((temp < Simulation.temp_lethal_min || //PAR TEMPERATURE MIN
                     temp > Simulation.temp_lethal_max));    //PAR TEMPERATURE MAX
 
-            if ( ((age > Simulation.egg_duration + Simulation.YolkSacLarvae_duration)) & (bouffe < 0.8)) {
+            if ( ((age > Simulation.egg_duration + Simulation.YolkSacLarvae_duration)) && (bouffe < 0.8)) {
                 living = false;
                 Population.starved_larvae++;
-                Cause_de_la_mort = "Starving larvae";
+                Cause_de_la_mort = "NStarving larvae";
 //            System.out.println("Starving larvae");
             }
 
@@ -1648,7 +1776,7 @@ public class Poissons {
 
             if (isdead_temp) {
                 living = false;
-                Cause_de_la_mort = "isdead_temp";
+                Cause_de_la_mort = "Qisdead_temp";
             }
         }
     }

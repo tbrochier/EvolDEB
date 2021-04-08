@@ -55,7 +55,9 @@ public class OutpoutManager_netcdf {
 
         ncOut.addGlobalAttribute("_FillValue", Float.NaN);
 
-        nb_drifter_this_year = Population.Pop.size()*10; //Simulation.Pop_max*10;
+//        nb_drifter_this_year = Population.Pop.size()*10; //Simulation.Pop_max*10;
+nb_drifter_this_year = (int) Simulation.nrec_max_jour * Simulation.nb_jours_par_ans * 10;
+
         drifter = ncOut.addDimension("drifter", nb_drifter_this_year);//Simulation.Pop_max*10);
 //        drifter = ncOut.addUnlimitedDimension("drifter");//Simulation.Pop_max*10);
 
@@ -74,6 +76,14 @@ public class OutpoutManager_netcdf {
         ncOut.addVariable("latitude", DataType.DOUBLE, dim2);
         ncOut.addVariableAttribute("latitude", "units", "degree north");
         ncOut.addVariableAttribute("latitude", "_FillValue", Double.NaN);
+
+        ncOut.addVariable("xgrid", DataType.DOUBLE, dim2);
+        ncOut.addVariableAttribute("xgrid", "units", "number of grid cells");
+        ncOut.addVariableAttribute("xgrid", "_FillValue", Double.NaN);                
+        
+        ncOut.addVariable("ygrid", DataType.DOUBLE, dim2);
+        ncOut.addVariableAttribute("ygrid", "units", "number of grid cells");
+        ncOut.addVariableAttribute("ygrid", "_FillValue", Double.NaN);
 
         ncOut.addVariable("fish_identification", DataType.DOUBLE, dim2);
         ncOut.addVariableAttribute("fish_identification", "units", "id_number");
@@ -120,11 +130,11 @@ public class OutpoutManager_netcdf {
         ncOut.addVariableAttribute("E_H", "_FillValue", Double.NaN);
 
         ncOut.addVariable("dx_kin", DataType.DOUBLE, dim2);
-        ncOut.addVariableAttribute("dx_kin", "units", "x-kinesis movement (m/s)");
+        ncOut.addVariableAttribute("dx_kin", "units", "x-kinesis movement (km/dt)");
         ncOut.addVariableAttribute("dx_kin", "_FillValue", Double.NaN);
 
         ncOut.addVariable("dy_kin", DataType.DOUBLE, dim2);
-        ncOut.addVariableAttribute("dy_kin", "units", "y-kinesis movement (m/s)");
+        ncOut.addVariableAttribute("dy_kin", "units", "y-kinesis movement (km/dt)");
         ncOut.addVariableAttribute("dy_kin", "_FillValue", Double.NaN);
 
         ncOut.addVariable("dx_advec", DataType.DOUBLE, dim2);
@@ -135,6 +145,8 @@ public class OutpoutManager_netcdf {
         ncOut.addVariableAttribute("dy_advec", "units", "y-advection movement (m/s)");
         ncOut.addVariableAttribute("dy_advec", "_FillValue", Double.NaN);
 
+        ncOut.addVariable("Cause_de_la_mort", DataType.CHAR, dim2);
+        ncOut.addVariableAttribute("Cause_de_la_mort", "_FillValue", "NaN");
         
         if (record_OPTIONAL_data){
 
@@ -172,10 +184,17 @@ public class OutpoutManager_netcdf {
         // Note the outer dimension has shape 1, since we will write one record at a timeDim
         ArrayDouble.D2 longitude_Data = new ArrayDouble.D2(1,drifter.getLength());
         ArrayDouble.D2 latitude_Data = new ArrayDouble.D2(1,drifter.getLength());
+
+        ArrayDouble.D2 ygrid_Data = new ArrayDouble.D2(1,drifter.getLength());
+        ArrayDouble.D2 xgrid_Data = new ArrayDouble.D2(1,drifter.getLength());
+        
+        
         ArrayDouble.D2 identification_Data = new ArrayDouble.D2(1,drifter.getLength());
         ArrayInt.D2 age_Data = new ArrayInt.D2(1, drifter.getLength()); // <<<<<<<peut-être viré
         ArrayDouble.D2 Effectif_super_indiv_Data = new ArrayDouble.D2(1, drifter.getLength()); // <<<<<<<peut-être viré
+        ucar.ma2.ArrayChar.D2 Cause_de_la_mort_Data = new ucar.ma2.ArrayChar.D2(1,drifter.getLength());
 
+        
 // DEB
         ArrayDouble.D2 E_Data = new ArrayDouble.D2(1, drifter.getLength());
         ArrayDouble.D2 V_Data = new ArrayDouble.D2(1, drifter.getLength());
@@ -191,8 +210,6 @@ public class OutpoutManager_netcdf {
         
 // POUR TESTER LA PONTE :
         ArrayDouble.D2 Nb_eggs_spawned_dt_Data = new ArrayDouble.D2(1, drifter.getLength()); // <<<<<<<peut-être viré
-
-     //   if (record_OPTIONAL_data){
         ArrayInt.D2 prof_Data = new ArrayInt.D2(1, drifter.getLength());
 // POUR TESTER LA KINESIS :
         ArrayDouble.D2 Q_Data = new ArrayDouble.D2(1, drifter.getLength());
@@ -223,8 +240,15 @@ public class OutpoutManager_netcdf {
                 for (int t = 0; t < drifter.getLength(); t++) {
                         longitude_Data.set(0,t, Double.NaN);
                         latitude_Data.set(0,t, Double.NaN);
+
+                        xgrid_Data.set(0,t, Double.NaN);
+                        ygrid_Data.set(0,t, Double.NaN);
+                        
                         age_Data.set(0,t, -999);
                         Effectif_super_indiv_Data.set(0,t, -999);
+                        Cause_de_la_mort_Data.set(0,t, '-');
+
+
                         E_Data.set(0,t, Double.NaN);
                         V_Data.set(0,t, Double.NaN);
                         E_R_Data.set(0,t, Double.NaN);
@@ -248,10 +272,17 @@ public class OutpoutManager_netcdf {
                 // On fabrique les data.set :
                 longitude_Data.set(0,p, Po.lon);
                 latitude_Data.set(0,p, Po.lat);
+                
+                xgrid_Data.set(0,p, Po.x);
+                ygrid_Data.set(0,p, Po.y);                
+                
                 identification_Data.set(0,p, Po.id);
 
                 age_Data.set(0, p, Po.age);
                 Effectif_super_indiv_Data.set(0, p, Po.S);
+                
+                char test = Po.Cause_de_la_mort.charAt(0);
+                Cause_de_la_mort_Data.set(0,p, test);
                 
                 E_Data.set(0, p, Po.DEB.E);
                 V_Data.set(0, p, Po.DEB.V);
@@ -288,9 +319,14 @@ public class OutpoutManager_netcdf {
                     // origin = 0
                     ncOut.write("longitude", origin, longitude_Data);
                     ncOut.write("latitude", origin, latitude_Data);
+
+                    ncOut.write("xgrid", origin, xgrid_Data);
+                    ncOut.write("ygrid", origin, ygrid_Data);                    
+                    
                     ncOut.write("fish_identification", origin, identification_Data);
                     ncOut.write("fish_age", origin, age_Data);
                     ncOut.write("Effectif_super_indiv", origin, Effectif_super_indiv_Data);
+                    ncOut.write("Cause_de_la_mort", origin, Cause_de_la_mort_Data);
 
                     ncOut.write("E", origin, E_Data);
                     ncOut.write("V", origin, V_Data);
@@ -359,10 +395,10 @@ public class OutpoutManager_netcdf {
         dim3[2] = y_Dim;
 
 /*        ncOut_Biom2D.addVariable("x", DataType.FLOAT, new Dimension[] {x_Dim});
-        ncOut_Biom2D.addVariableAttribute("x", "standard_name", "x_grid_index");
+        ncOut_Biom2D.addVariableAttribute("x", "standard_name", "xgrid_index");
 
         ncOut_Biom2D.addVariable("y", DataType.FLOAT, new Dimension[] {y_Dim});
-        ncOut_Biom2D.addVariableAttribute("y", "standard_name", "y_grid_index");
+        ncOut_Biom2D.addVariableAttribute("y", "standard_name", "ygrid_index");
 */
         
     // CREATION DES VARIABLES QUI CONTIENDRONT LES VALEURS DES DIMMENSIONS (lon, lat et time)  
@@ -371,7 +407,7 @@ public class OutpoutManager_netcdf {
     ncOut_Biom2D.addVariableAttribute("xi_rho",  "units","seconds since 1977-01-01");
     ncOut_Biom2D.addVariableAttribute("xi_rho",  "long_name" ,"y-dimension of the grid");
     ncOut_Biom2D.addVariableAttribute("xi_rho",  "field","time, scalar, series");
-    ncOut_Biom2D.addVariableAttribute("xi_rho",  "standard_name" ,"y_grid_index");
+    ncOut_Biom2D.addVariableAttribute("xi_rho",  "standard_name" ,"ygrid_index");
     ncOut_Biom2D.addVariableAttribute("xi_rho",  "c_grid_dynamic_range" ,"2:217");
     ncOut_Biom2D.addVariableAttribute("xi_rho",  "axis" ,"X");
             
@@ -379,7 +415,7 @@ public class OutpoutManager_netcdf {
     ncOut_Biom2D.addVariableAttribute("eta_rho",  "units","seconds since 1977-01-01");
     ncOut_Biom2D.addVariableAttribute("eta_rho",  "long_name" ,"y-dimension of the grid");
     ncOut_Biom2D.addVariableAttribute("eta_rho",  "field","time, scalar, series");
-    ncOut_Biom2D.addVariableAttribute("eta_rho",  "standard_name" ,"y_grid_index");
+    ncOut_Biom2D.addVariableAttribute("eta_rho",  "standard_name" ,"ygrid_index");
     ncOut_Biom2D.addVariableAttribute("eta_rho",  "c_grid_dynamic_range" ,"2:325");
     ncOut_Biom2D.addVariableAttribute("eta_rho",  "axis" ,"Y");
 
@@ -575,7 +611,8 @@ public class OutpoutManager_netcdf {
         ncOut_Data_Indiv.addVariable("Body_length_rec", DataType.INT, dim1);
         ncOut_Data_Indiv.addVariableAttribute("Body_length_rec", "units", "cm");
         ncOut_Data_Indiv.addVariableAttribute("Body_length_rec", "_FillValue", Double.valueOf((0.0D / 0.0D)));
-
+        
+        
 // Tolerances hereditaires : 
         ncOut_Data_Indiv.addVariable("rayon_exploration_temporel", DataType.INT, dim1);
         ncOut_Data_Indiv.addVariableAttribute("rayon_exploration_temporel", "units", "days");
@@ -616,7 +653,8 @@ public class OutpoutManager_netcdf {
         ucar.ma2.ArrayDouble.D1 jour_natal_Data = new ucar.ma2.ArrayDouble.D1(1);
         ucar.ma2.ArrayDouble.D1 year_natal_Data = new ucar.ma2.ArrayDouble.D1(1);
         ucar.ma2.ArrayDouble.D1 temperature_natal_Data = new ucar.ma2.ArrayDouble.D1(1);
-
+        
+                
         ucar.ma2.ArrayDouble.D1 rayon_exploration_temporel_Data = new ucar.ma2.ArrayDouble.D1(1);
         ucar.ma2.ArrayDouble.D1 rayon_exploration_spatial_Data = new ucar.ma2.ArrayDouble.D1(1);
         ucar.ma2.ArrayDouble.D1 tolerance_temperature_Data = new ucar.ma2.ArrayDouble.D1(1);
@@ -651,7 +689,7 @@ public class OutpoutManager_netcdf {
             ncOut_Data_Indiv.write("jour_natal", origin, jour_natal_Data);
             ncOut_Data_Indiv.write("year_natal", origin, year_natal_Data);
             ncOut_Data_Indiv.write("temperature_natal", origin, temperature_natal_Data);
-
+            
             ncOut_Data_Indiv.write("rayon_exploration_temporel", origin, rayon_exploration_temporel_Data);
             ncOut_Data_Indiv.write("rayon_exploration_spatial", origin, rayon_exploration_spatial_Data);
             ncOut_Data_Indiv.write("tolerance_temperature", origin, tolerance_temperature_Data);

@@ -19,27 +19,7 @@ public class Sardinella_aurita extends DebLayer{
         V_init = 0.000001; // cm^3, Initial volume --> close to 0, try different initial values
         // taille d'un oeuf = 1 mm3
 
-        // STAGES-SPECIFIC parameters:
-         del_M_egg = 0.1391; // shape coefficient for EGG
-         T_L_egg = 15 + 273;    //  K, lower boundary tolerance range
-         T_H_egg = 27 + 273;  //  K, upper boundary tolerance range
 
-            del_M_YOLK_SAC_LARVA = 0.1391; // shape coefficient for YOLK_SAC_LARVA
-            T_L_YOLK_SAC_LARVA = 15 + 273;//0 + 273;    //  K, lower boundary tolerance range
-            T_H_YOLK_SAC_LARVA = 27 + 273;//27 + 273;   //  K, upper boundary tolerance range
-                
-            del_M_FEEDING_LARVA = 0.1391;// shape coefficient for FEEDING_LARVA
-            T_L_FEEDING_LARVA = 15 + 273;    //  K, lower boundary tolerance range
-            T_H_FEEDING_LARVA = 27 + 273;//27 + 273;   //  K, upper boundary tolerance range
-               
-            del_M_JUVENILE = 0.1391;// shape coefficient for JUVENILE
-            T_L_JUVENILE = 15 + 273;    //  K, lower boundary tolerance range
-            T_H_JUVENILE = 27 + 273;//27 + 273;   //  K, upper boundary tolerance range
-            
-            del_M_ADULT = 0.1391;// shape coefficient for ADULT
-            T_L_ADULT = 10 + 273;   //  K, lower boundary tolerance range
-            T_H_ADULT = 29 + 273;//27 + 273;   //  K, upper boundary tolerance range
- 
 //Primary parameters        
         // temperature correction
         T_ref = 20 + 273;   //  K, Reference temperature ; 
@@ -47,11 +27,6 @@ public class Sardinella_aurita extends DebLayer{
         T_AL = 50000;      //  K, Arrhenius temp for lower boundary
         T_AH = 190000;     //  K, Arrhenius temp for upper boundary
 
-// GAMME MIN-MAX DE TEMP ICI CELLE DES ADULTES INDICATIF,
-        //MAIS CHANGE POUR CHAQUE STADE (dans set_stage):
-            // Min et Max des corr de flux de temperature pour JUVENILES:
-            T_L = 15 + 273;//0 + 273;    //  K, lower boundary tolerance range
-            T_H = 27 + 273;//27 + 273;   //  K, upper boundary tolerance range
 
         
         // Relation d'echelle entre S. pilchardus et S. aurita
@@ -111,6 +86,34 @@ public class Sardinella_aurita extends DebLayer{
         c_w = 1 - d_V;   // - , water content (c_w * W_w = total water weight)
         relative_fecondity = 400; // nb oeuf par grammes de femelle These Freon
 
+        // STAGES-SPECIFIC parameters:
+        
+         del_M_egg = 0.1391; // shape coefficient for EGG
+         T_L_egg = 15 + 273;    //  K, lower boundary tolerance range
+         T_H_egg = 27 + 273;  //  K, upper boundary tolerance range
+
+        // GAMME MIN-MAX DE TEMP ICI CELLE DES ADULTES INDICATIF,
+        //MAIS CHANGE POUR CHAQUE STADE (dans set_stage):
+            // Min et Max des corr de flux de temperature pour JUVENILES:
+            T_L = 15 + 273;//0 + 273;    //  K, lower boundary tolerance range
+            T_H = 27 + 273;//27 + 273;   //  K, upper boundary tolerance range
+         
+            del_M_YOLK_SAC_LARVA = 0.1391; // shape coefficient for YOLK_SAC_LARVA
+            T_L_YOLK_SAC_LARVA = 15 + 273;//0 + 273;    //  K, lower boundary tolerance range
+            T_H_YOLK_SAC_LARVA = 27 + 273;//27 + 273;   //  K, upper boundary tolerance range
+                
+            del_M_FEEDING_LARVA = 0.1391;// shape coefficient for FEEDING_LARVA
+            T_L_FEEDING_LARVA = 15 + 273;    //  K, lower boundary tolerance range
+            T_H_FEEDING_LARVA = 27 + 273;//27 + 273;   //  K, upper boundary tolerance range
+               
+            del_M_JUVENILE = 0.1391;// shape coefficient for JUVENILE
+            T_L_JUVENILE = 15 + 273;    //  K, lower boundary tolerance range
+            T_H_JUVENILE = 27 + 273;//27 + 273;   //  K, upper boundary tolerance range
+            
+            del_M_ADULT = 0.1391;// shape coefficient for ADULT
+            T_L_ADULT = 10 + 273;   //  K, lower boundary tolerance range
+            T_H_ADULT = 29 + 273;//27 + 273;   //  K, upper boundary tolerance range
+         
         // compound parameters
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         X_K = Simulation.food_half_saturation; // 0.2 = bon pour le Nano_phyto en surface //(p_Am / (kap_X * F_m))/100;// c'etait 50  // same unit as food, half-saturation coefficient
