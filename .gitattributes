@@ -1,0 +1,10 @@
+lib/jdom-2.0.6.jar filter=lfs diff=lfs merge=lfs -text
+lib/netcdf-2.2.20.jar filter=lfs diff=lfs merge=lfs -text
+lib/slf4j-jdk14.jar filter=lfs diff=lfs merge=lfs -text
+lib/jdom-2.0.6-contrib.jar filter=lfs diff=lfs merge=lfs -text
+lib/jdom-2.0.6-sources.jar filter=lfs diff=lfs merge=lfs -text
+lib/jdom-2.0.6-javadoc.jar filter=lfs diff=lfs merge=lfs -text
+lib/jdom-2.0.6-junit.jar filter=lfs diff=lfs merge=lfs -text
+lib/netcdfAll-4.1.jar filter=lfs diff=lfs merge=lfs -text
+lib/bufr-1.1.00.jar filter=lfs diff=lfs merge=lfs -text
+lib/grib-5.1.03.jar filter=lfs diff=lfs merge=lfs -text
