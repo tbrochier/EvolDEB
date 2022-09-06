@@ -482,8 +482,7 @@ System.out.println(" jour = " + jour);
     void init(int jour) {
 
 // DEB -- -- -- -- - - - --
-        DEB = new Sardinella_aurita();//DebLayer();
-       // DEB = new Sardina_pilchardus();//DebLayer();        
+        DEB = new Engraulis_ringens();//DebLayer();
         DEB.init();
         first_spawn = true;
 // ---------------------------

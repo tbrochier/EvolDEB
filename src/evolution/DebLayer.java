@@ -57,15 +57,15 @@ public abstract class DebLayer {
 
 
 // feeding & assimilation
-    double F_m;    //  l/d.cm^2, {F_m} max spec searching rate
-    double kap_X;         //  -, digestion efficiency of food to reserve
+//    double F_m;    //  l/d.cm^2, {F_m} max spec searching rate
+//    double kap_X;         //  -, digestion efficiency of food to reserve
     double p_Am;     //  J/cm^2/d, maximum surface-specific assimilation rate
     // mobilisation, maintenance, growth & reproduction
     double v;        //  cm/d, energy conductance
     double Kappa;      //  -, allocation fraction to soma = growth + somatic maintenance
     double kap_R;    //  -, reproduction efficiency
     double p_M;      //  J/d.cm^3, [p_M], vol-specific somatic maintenance
-    double p_T;      //  J/d.cm^2, {p_T}, surface-specific som maintenance
+//    double p_T;      //  J/d.cm^2, {p_T}, surface-specific som maintenance
     double k_J;      //  1/d, maturity maint rate coefficient
     double E_G;      //  J/cm^3, [E_G], spec cost for structure
     // life stages: E_H is the cumulated energy from reserve invested in maturation
@@ -73,6 +73,13 @@ public abstract class DebLayer {
     double E_Hb;        // J, E_H^b, maturity at birth
     double E_Hj;	// J, Maturity threshold at metamorphosis
     double E_Hp;       // J, E_H^p, maturity at puberty
+
+    // Metabolic acceleration – abj model
+    double s_M; // Metabolic acceleration factor
+    double L_b; // volumetric length at birth [cm]
+    double L_j; // volumetric length at metamorphosis [cm]
+
+    
 // [TIM]
     double E_Hg;      //J, E_H^g, maturité des gonades
     double E_Hbatch;      //J, E_H^g, maturité d'un batch de ponte
@@ -86,7 +93,7 @@ public abstract class DebLayer {
     double c_w;  //  -, water content (c_w * W_w = total water weight)
     // compounds parameters
     double X_K;  // same unit as food, half-saturation coefficient
-    double p_Xm; // J.cm-2.d-1, max surf area specific ingestion rate, here we assume constant assimilation efficiency
+//    double p_Xm; // J.cm-2.d-1, max surf area specific ingestion rate, here we assume constant assimilation efficiency
     // assimilation parameter = primary parameter, ingestion rate is calculated "backward" from assimilation
     double W_V, W_E, W_ER; // poids en gramme de chaque compartiment, pour le calcult du poids total
     // Tim parameters
@@ -312,34 +319,45 @@ public abstract class DebLayer {
             f = food / (food + X_K); // scaled functional response
         }
 
-        
+// ACCELERATION METABOLIQUE
+        if (E_H < E_Hb) {
+            s_M = 1;
+        } else if ((E_Hb <= E_H) && (E_H < E_Hj)) {
+            s_M = Math.pow(V,1/3.0)/L_b;
+        } else {
+            s_M = L_j / L_b;
+        }
+                
 // ICI FACTEUR LARVES
         // facteur m qui multiplie p_AmT et v_T en fonction 
         
         
         double cT = getcT(temperature);
-
-        double p_XmT = p_Xm * cT;
-        double p_AmT = p_XmT * kap_X;
+        double p_AmT = p_Am * cT;       
         double v_T = v * cT;
         double p_MT = p_M * cT;
-        double p_TT = p_T * cT;
+//        double p_TT = p_T * cT;
         double k_JT = k_J * cT;
-
+        
+// Only two parameters are accelerated by s_M, p_Am and v
+        p_AmT  = s_M * p_AmT;
+        v_T = s_M * v_T;
+                
+        
         //ENERGY FLUXES (J d-1)
         double flow_p_A = f * p_AmT * Math.pow(V, 2 / 3.0); // Assimilation
         double flow_p_M = p_MT * V; // Volume-linked somatic maintenance
-        double flow_p_T = p_TT * Math.pow(V, 2 / 3.0); // Surface-linked somatic maintenance
-        double flow_p_S = flow_p_M + flow_p_T; // Somatic maintenance
-        double flow_p_C = (E / V) * (E_G * v_T * Math.pow(V, 2 / 3.0) + flow_p_S) / (Kappa * E / V + E_G); // eq. 2.12 p.37 Kooijman 2010; pC = [pC]*V
-        double flow_p_G = Math.max((double) 0, Kappa * flow_p_C - flow_p_S);   // Growth
+        double flow_p_C = (E / V) * (E_G * v_T * Math.pow(V, 2 / 3.0) + flow_p_M) / (Kappa * E / V + E_G); // eq. 2.12 p.37 Kooijman 2010; pC = [pC]*V
+        double flow_p_G = Math.max((double) 0, Kappa * flow_p_C - flow_p_M);   // Growth
         double flow_p_J = k_JT * E_H; // Maturity maintenance
         double flow_p_R = ((1 - Kappa) * flow_p_C) - flow_p_J; // Maturation or reproduction
 
         //// STATE VARIABLES - Differential equations ////////////////////////////////////////
         double dEdt = flow_p_A - flow_p_C;   // Reserve, J d-1 ; dE/dt = pA - pC;
         double dVdt = flow_p_G / E_G;           // Structure, cm^3 d-1 ; dV/dt = (kap * p_C - p_S)/EG;
+        
         double dE_Hdt, dE_Rdt;
+        
         if (E_H < E_Hp) {
             dE_Hdt = flow_p_R; // maturation, J d-1
             dE_Rdt = 0; // Repro buffer J d-1
@@ -361,12 +379,24 @@ public abstract class DebLayer {
 
         // starvation test
         int starvation;
-        if (Kappa * flow_p_C < flow_p_M && (1 - Kappa) * flow_p_C < flow_p_J) {
-            starvation = 0;//no starvation
+        if (Kappa * flow_p_C < flow_p_M || (1 - Kappa) * flow_p_C < flow_p_J) {
+            starvation = 1;//no starvation
         } else {
-            starvation = 1;
+            starvation = 0;
         }
 
+// TC threshold test
+        int dead_hot;
+        double cT_threshold = 0.052;
+        if (cT <= cT_threshold){
+            dead_hot = 1;
+        }else{
+            dead_hot = 0;
+        }    
+        
+        
+
+// (ajouter dead_hot dans les output...
         double[] res = {E, V, E_H, E_R, (double) starvation};
         return res;
     }
@@ -386,10 +416,11 @@ if (Gonade_buffer>E_Hbatch){
         if (E_R <0) {
 System.out.println(" E_R = " + E_R);
 System.out.println(" Gonade_buffer = " + Gonade_buffer);
-
         }
     }
 
+    
+    
     public static double getcT(double temperature) {
         // Correction of physiology parameters for temperature :
         double tempK = 273 + temperature;
